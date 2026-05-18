@@ -1,17 +1,47 @@
-const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
+import express from "express";
+
+import cors from "cors";
+
+import {
+  clerkMiddleware
+}
+from "@clerk/express";
+
+import authRoutes
+from "./modules/auth/routes/auth.routes.js";
+
+import reporteRoutes
+from "./modules/ciudadano/routes/reporte.routes.js";
 
 const app = express();
 
 app.use(cors());
+
 app.use(express.json());
-app.use(morgan("dev"));
+
+app.use(clerkMiddleware());
+
+
+
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+app.use(
+  "/api/reportes",
+  reporteRoutes
+);
+
+
 
 app.get("/", (req, res) => {
+
   res.json({
-    message: "Api Negra Andando",
+    ok: true,
+    mensaje:
+      "API UrbanLog funcionando 🚀"
   });
 });
 
-module.exports = app;
+export default app;
