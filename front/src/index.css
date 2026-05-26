@@ -7,3 +7,21 @@
 .leaflet-top.leaflet-left {
   top: 70px;
 }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-in;
+}
