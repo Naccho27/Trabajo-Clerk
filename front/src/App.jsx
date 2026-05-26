@@ -89,13 +89,9 @@ function App() {
 
                 email:
 
-                  user.primaryEmailAddress
-                    ?.emailAddress ||
+                  user.primaryEmailAddress?.emailAddress ||
 
-                  user.emailAddresses?.[0]
-                    ?.emailAddress ||
-
-                  "sin-email@example.com",
+                  `${user.id}@no-email.com`,
 
                 imagenPerfil:
                   user.imageUrl

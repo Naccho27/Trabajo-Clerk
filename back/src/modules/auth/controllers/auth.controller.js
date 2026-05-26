@@ -23,6 +23,11 @@ export const sincronizarUsuario =
 
       } = req.body;
 
+      // Email fallback seguro
+      const emailFinal =
+        email ||
+        `${clerkId}@no-email.com`;
+
       let usuario =
         await Usuario.findOne({
           clerkId
@@ -38,11 +43,11 @@ export const sincronizarUsuario =
 
             nombreUsuario,
 
-            email,
+            email: emailFinal,
 
             imagenPerfil,
 
-            rol: "citizen"
+            rol: "ciudadano"
           });
       }
 

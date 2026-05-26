@@ -11,54 +11,128 @@ import {
   obtenerReportesPublicosService,
 } from "../services/reporte.service.js";
 
-export const crearReporte =
-  async (req, res) => {
-    try {
+import { subirArchivoCloudinary } from "../../../shared/utils/cloudinaryUpload.js";
 
-      const auth = req.auth();
+/*
+|--------------------------------------------------------------------------
+| Crear reporte
+|--------------------------------------------------------------------------
+*/
 
-      let usuario = null;
+export const crearReporte = async (req, res) => {
 
-      if (auth?.userId) {
+  try {
 
-        usuario =
-          await Usuario.findOne({
-            clerkId:
-              auth.userId
-          });
+    console.log("ENTRO A CREAR REPORTE");
 
-      }
+    console.log(req.body);
 
-      console.log("USUARIO ENCONTRADO:");
-      console.log(usuario);
+    console.log(req.files);
 
-      const nuevoReporte =
-        await crearReporteService({
-          ...req.body,
+    const auth = req.auth();
 
-          usuarioId:
-            usuario?._id || null,
+    let usuario = null;
 
-          modoAnonimo:
-            !usuario
-        });
+    if (auth?.userId) {
 
-      res.status(201).json({
-        ok: true,
-        reporte: nuevoReporte
+      usuario = await Usuario.findOne({
+        clerkId: auth.userId,
       });
-
-    } catch (error) {
-
-      console.log(error);
-
-      res.status(500).json({
-        ok: false,
-        mensaje: error.message
-      });
-
     }
-  };
+
+    let imagenes = [];
+
+    let videos = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Subir archivos
+    |--------------------------------------------------------------------------
+    */
+
+    if (req.files && req.files.length > 0) {
+
+      for (const archivo of req.files) {
+
+        const resultado =
+          await subirArchivoCloudinary(
+            archivo,
+            "urbanlog/reportes"
+          );
+
+        const nombre =
+          archivo.originalname.toLowerCase();
+
+        const esVideo =
+          nombre.endsWith(".mp4") ||
+          nombre.endsWith(".webm");
+
+        if (esVideo) {
+
+          videos.push(
+            resultado.secure_url
+          );
+
+        } else {
+
+          imagenes.push(
+            resultado.secure_url
+          );
+        }
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Crear reporte
+    |--------------------------------------------------------------------------
+    */
+
+    const nuevoReporte = await crearReporteService({
+
+  ...req.body,
+
+  imagenes: archivosSubidos
+    .filter(a => a.resource_type === "image")
+    .map(a => a.url),
+
+  videos: archivosSubidos
+    .filter(a => a.resource_type === "video")
+    .map(a => a.url),
+
+  usuarioId: usuario?._id || null,
+
+  modoAnonimo: !usuario,
+
+  historialEstados: [
+    {
+      estado: "open",
+
+      fechaInicio: new Date(),
+
+      usuarioId: usuario?._id || null,
+
+      comentario: "Reporte creado",
+    },
+  ],
+});
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: error.message,
+    });
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| Públicos
+|--------------------------------------------------------------------------
+*/
 
 export const obtenerReportesPublicos = async (req, res) => {
   try {
@@ -75,6 +149,12 @@ export const obtenerReportesPublicos = async (req, res) => {
     });
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| Obtener por ID
+|--------------------------------------------------------------------------
+*/
 
 export const obtenerReportePorId = async (req, res) => {
   try {
@@ -99,10 +179,18 @@ export const obtenerReportePorId = async (req, res) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Mis reportes
+|--------------------------------------------------------------------------
+*/
+
 export const obtenerMisReportes = async (req, res) => {
   try {
+    const auth = req.auth();
+
     const usuario = await Usuario.findOne({
-      clerkId: req.auth.userId,
+      clerkId: auth.userId,
     });
 
     if (!usuario) {
@@ -126,10 +214,18 @@ export const obtenerMisReportes = async (req, res) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Reportes activos
+|--------------------------------------------------------------------------
+*/
+
 export const obtenerMisReportesActivos = async (req, res) => {
   try {
+    const auth = req.auth();
+
     const usuario = await Usuario.findOne({
-      clerkId: req.auth.userId,
+      clerkId: auth.userId,
     });
 
     if (!usuario) {
@@ -153,10 +249,18 @@ export const obtenerMisReportesActivos = async (req, res) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Historial
+|--------------------------------------------------------------------------
+*/
+
 export const obtenerHistorial = async (req, res) => {
   try {
+    const auth = req.auth();
+
     const usuario = await Usuario.findOne({
-      clerkId: req.auth.userId,
+      clerkId: auth.userId,
     });
 
     if (!usuario) {
@@ -180,18 +284,19 @@ export const obtenerHistorial = async (req, res) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Actualizar
+|--------------------------------------------------------------------------
+*/
+
 export const actualizarReporte = async (req, res) => {
   try {
-    const usuario = await Usuario.findOne({
-      clerkId: req.auth.userId,
-    });
+    const auth = req.auth();
 
-    if (!usuario) {
-      return res.status(404).json({
-        ok: false,
-        mensaje: "Usuario no encontrado",
-      });
-    }
+    const usuario = await Usuario.findOne({
+      clerkId: auth.userId,
+    });
 
     const reporte = await obtenerReportePorIdService(req.params.id);
 
@@ -230,18 +335,19 @@ export const actualizarReporte = async (req, res) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Eliminar
+|--------------------------------------------------------------------------
+*/
+
 export const eliminarReporte = async (req, res) => {
   try {
-    const usuario = await Usuario.findOne({
-      clerkId: req.auth.userId,
-    });
+    const auth = req.auth();
 
-    if (!usuario) {
-      return res.status(404).json({
-        ok: false,
-        mensaje: "Usuario no encontrado",
-      });
-    }
+    const usuario = await Usuario.findOne({
+      clerkId: auth.userId,
+    });
 
     const reporte = await obtenerReportePorIdService(req.params.id);
 
