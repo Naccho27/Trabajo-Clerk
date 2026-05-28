@@ -5,47 +5,41 @@ const usuarioSchema = new mongoose.Schema(
     clerkId: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
 
     nombreUsuario: {
       type: String,
-      required: true
+      required: true,
     },
 
     email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
 
     imagenPerfil: {
       type: String,
-      default: ""
+      default: "",
     },
 
     rol: {
       type: String,
-      enum: [
-        "citizen",
-        "moderator",
-        "operador",
-        "admin"
-      ],
-      default: "citizen"
+
+      enum: ["ciudadano", "supervisor", "operador", "admin"],
+
+      default: "ciudadano",
     },
 
     activo: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
-export default mongoose.model(
-  "Usuario",
-  usuarioSchema
-);
+export default mongoose.model("Usuario", usuarioSchema);

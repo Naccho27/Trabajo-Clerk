@@ -4,8 +4,13 @@ import cors from "cors";
 
 import {
   clerkMiddleware
-}
-from "@clerk/express";
+} from "@clerk/express";
+
+/*
+|--------------------------------------------------------------------------
+| Routes
+|--------------------------------------------------------------------------
+*/
 
 import authRoutes
 from "./modules/auth/routes/auth.routes.js";
@@ -13,7 +18,24 @@ from "./modules/auth/routes/auth.routes.js";
 import reporteRoutes
 from "./modules/ciudadano/routes/reporte.routes.js";
 
+import supervisorRoutes
+from "./modules/supervisor/routes/supervisor.routes.js";
+
+import analyticsRoutes
+from "./modules/analytics/routes/analytics.routes.js";
+
+import notificacionRoutes
+from "./modules/notificaciones/routes/notificacion.routes.js";
+
 const app = express();
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Middlewares
+|--------------------------------------------------------------------------
+*/
 
 app.use(cors());
 
@@ -21,7 +43,11 @@ app.use(express.json());
 
 app.use(clerkMiddleware());
 
-
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
 app.use(
   "/api/auth",
@@ -33,7 +59,26 @@ app.use(
   reporteRoutes
 );
 
+app.use(
+  "/api/supervisor",
+  supervisorRoutes
+);
 
+app.use(
+  "/api/analytics",
+  analyticsRoutes
+);
+
+app.use(
+  "/api/notificaciones",
+  notificacionRoutes
+);
+
+/*
+|--------------------------------------------------------------------------
+| Root
+|--------------------------------------------------------------------------
+*/
 
 app.get("/", (req, res) => {
 

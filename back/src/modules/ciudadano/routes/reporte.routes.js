@@ -1,32 +1,26 @@
-import { Router }
-from "express";
+import { Router } from "express";
+
+import { clerkMiddleware, requireAuth } from "@clerk/express";
 
 import {
-  clerkMiddleware,
-  requireAuth
-}
-from "@clerk/express";
-
-import {
-
   crearReporte,
-
   obtenerReportesPublicos,
-
   obtenerReportePorId,
-
   obtenerMisReportes,
-
   obtenerMisReportesActivos,
-
   obtenerHistorial,
-
   actualizarReporte,
+  eliminarReporte,
+} from "../controllers/reporte.controller.js";
 
-  eliminarReporte
+import { validate } from "../../../shared/middlewares/validate.middleware.js";
 
-}
-from "../controllers/reporte.controller.js";
+import {
+  crearReporteSchema,
+  actualizarReporteSchema,
+} from "../../../shared/validators/reporte.validator.js";
+
+import { upload } from "../../../shared/middlewares/upload.middleware.js";
 
 const router = Router();
 
@@ -64,7 +58,8 @@ router.use(clerkMiddleware());
 router.post(
   "/",
   requireAuth(),
-  crearReporte
+  upload.array("archivos", 3),
+  crearReporte,
 );
 
 router.get(
@@ -87,7 +82,11 @@ router.get(
 
 router.put(
   "/:id",
+
   requireAuth(),
+
+  validate(actualizarReporteSchema),
+
   actualizarReporte
 );
 

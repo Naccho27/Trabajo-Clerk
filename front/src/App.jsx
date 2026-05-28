@@ -1,21 +1,29 @@
 import {
-  SignedIn,
-  SignedOut,
-  SignIn,
-  UserButton,
   useAuth,
-  useUser
+  useUser,
 } from "@clerk/clerk-react";
 
 import { useEffect } from "react";
+
 import axios from "axios";
-import MapView from "./components/Map/MapView";
+
 import AppRouter from "./router/AppRouter";
 
 function App() {
 
   const { getToken } = useAuth();
-  const { user, isLoaded } = useUser();
+
+  const {
+    user,
+    isLoaded,
+    isSignedIn
+  } = useUser();
+
+  /*
+  |-------------------------------------------------------------
+  | Sync usuario
+  |-------------------------------------------------------------
+  */
 
   useEffect(() => {
 
@@ -23,35 +31,64 @@ function App() {
 
       try {
 
-        console.log("USE EFFECT");
+        /*
+        |---------------------------------------------------------
+        | Esperar Clerk
+        |---------------------------------------------------------
+        */
 
         if (!isLoaded) {
           console.log("CLERK NO CARGADO");
           return;
         }
 
-        if (!user) {
+        /*
+        |---------------------------------------------------------
+        | No logueado
+        |---------------------------------------------------------
+        */
+
+        if (!isSignedIn || !user) {
           console.log("NO HAY USER");
           return;
         }
 
-        console.log("USER:", user);
+        /*
+        |---------------------------------------------------------
+        | Token Clerk
+        |---------------------------------------------------------
+        */
 
-        const token = await getToken({ template: "backend" });
+        const token = await getToken({
+          template: "backend"
+        });
 
-        console.log("TOKEN:", token);
+        /*
+        |---------------------------------------------------------
+        | Sync backend
+        |---------------------------------------------------------
+        */
 
-        const response = await axios.post(
+        await axios.post(
           "http://localhost:3000/api/auth/sync",
+
           {
             clerkId: user.id,
-            nombreUsuario: user.username || user.firstName || "Usuario",
+
+            nombreUsuario:
+              user.username ||
+              user.firstName ||
+              "Usuario",
+
             email:
               user.primaryEmailAddress?.emailAddress ||
               user.emailAddresses?.[0]?.emailAddress ||
               "sin-email@example.com",
-            imagenPerfil: user.imageUrl
+
+            imagenPerfil:
+              user.imageUrl
           },
+
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -59,18 +96,40 @@ function App() {
           }
         );
 
-        console.log("RESPUESTA BACK:", response.data);
+        console.log("USUARIO SINCRONIZADO");
 
       } catch (error) {
-        console.log("ERROR AXIOS:");
+
+        console.log("ERROR SYNC:");
+
         console.log(error);
+
         console.log(error.response?.data);
       }
     };
 
     sincronizarUsuario();
 
-  }, [isLoaded, user]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    user
+  ]);
+
+  /*
+  |-------------------------------------------------------------
+  | Esperar Clerk antes de renderizar
+  |-------------------------------------------------------------
+  */
+
+  if (!isLoaded) {
+
+    return (
+      <div className="w-screen h-screen flex items-center justify-center">
+        Cargando...
+      </div>
+    );
+  }
 
   return <AppRouter />;
 }
