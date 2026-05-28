@@ -60,23 +60,18 @@ export const crearReporte = async (req, res) => {
             "urbanlog/reportes"
           );
 
-        const nombre =
-          archivo.originalname.toLowerCase();
-
-        const esVideo =
-          nombre.endsWith(".mp4") ||
-          nombre.endsWith(".webm");
-
-        if (esVideo) {
+        if (
+          resultado.resource_type === "video"
+        ) {
 
           videos.push(
-            resultado.secure_url
+            resultado.url
           );
 
         } else {
 
           imagenes.push(
-            resultado.secure_url
+            resultado.url
           );
         }
       }
@@ -88,34 +83,26 @@ export const crearReporte = async (req, res) => {
     |--------------------------------------------------------------------------
     */
 
-    const nuevoReporte = await crearReporteService({
+    const nuevoReporte =
+      await crearReporteService({
 
-  ...req.body,
+        ...req.body,
 
-  imagenes: archivosSubidos
-    .filter(a => a.resource_type === "image")
-    .map(a => a.url),
+        imagenes,
 
-  videos: archivosSubidos
-    .filter(a => a.resource_type === "video")
-    .map(a => a.url),
+        videos,
 
-  usuarioId: usuario?._id || null,
+        usuarioId:
+          usuario?._id || null,
 
-  modoAnonimo: !usuario,
+        modoAnonimo:
+          !usuario,
+      });
 
-  historialEstados: [
-    {
-      estado: "open",
-
-      fechaInicio: new Date(),
-
-      usuarioId: usuario?._id || null,
-
-      comentario: "Reporte creado",
-    },
-  ],
-});
+    res.status(201).json({
+      ok: true,
+      reporte: nuevoReporte,
+    });
 
   } catch (error) {
 
