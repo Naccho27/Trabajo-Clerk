@@ -47,7 +47,7 @@ export const obtenerMisReportesService = async (usuarioId) => {
 };
 
 export const obtenerReportePorIdService = async (id) => {
-  return await Reporte.findById(id);
+  return await Reporte.findById(id).populate("usuarioId", "nombreUsuario imagenPerfil rol");
 };
 
 export const actualizarReporteService = async (id, datos) => {

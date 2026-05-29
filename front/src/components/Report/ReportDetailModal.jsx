@@ -1,8 +1,8 @@
-// src/components/Report/ReportDetailModal.jsx
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
+import ProfileModal from "../Profile/ProfileModal.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -35,6 +35,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
   const [reporte, setReporte] = useState(null);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
+  const [showAutorPerfil, setShowAutorPerfil] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
@@ -59,11 +60,14 @@ export default function ReportDetailModal({ reporteId, onClose }) {
   };
 
   return (
-  <div className="fixed inset-0 z-[1001] bg-black/40 flex items-center justify-center px-4" onClick={handleClose}>
     <div
-      className={`bg-white rounded-3xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto ${closing ? "slide-down" : "slide-up"}`}
-      onClick={(e) => e.stopPropagation()}
+      className="fixed inset-0 z-[1001] bg-black/40 flex items-center justify-center px-4"
+      onClick={handleClose}
     >
+      <div
+        className={`bg-white rounded-3xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto ${closing ? "slide-down" : "slide-up"}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {loading ? (
           <div className="flex items-center justify-center h-40">
             <p className="text-sm text-gray-400">Cargando reporte...</p>
@@ -107,7 +111,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
               </div>
             </div>
 
-            {/* Dirección si existe */}
+            {/* Dirección */}
             {reporte.ubicacion?.direccion && (
               <p className="text-xs text-gray-400 mb-4">
                 📍 {reporte.ubicacion.direccion}, {reporte.ubicacion.ciudad}
@@ -124,9 +128,11 @@ export default function ReportDetailModal({ reporteId, onClose }) {
 
             {/* Descripción */}
             <p className="text-xs text-gray-400 font-medium mb-1">Descripción</p>
-            <p className="text-sm text-gray-700 leading-relaxed mb-4">{reporte.descripcion}</p>
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">
+              {reporte.descripcion}
+            </p>
 
-            {/* Imágenes — campo real: reporte.imagenes */}
+            {/* Imágenes */}
             {reporte.imagenes?.length > 0 && (
               <>
                 <p className="text-xs text-gray-400 font-medium mb-2">Fotos</p>
@@ -145,15 +151,62 @@ export default function ReportDetailModal({ reporteId, onClose }) {
 
             <hr className="mb-4" />
 
-            {/* Fecha */}
-            <p className="text-xs text-gray-400">
-              Reportado el{" "}
-              {new Date(reporte.createdAt).toLocaleDateString("es-AR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
+            {/* Autor */}
+            {reporte.modoAnonimo || !reporte.usuarioId ? (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                  👤
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Anónimo</p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(reporte.createdAt).toLocaleDateString("es-AR", {
+                      day: "numeric", month: "long", year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {reporte.usuarioId.imagenPerfil ? (
+                    <img
+                      src={reporte.usuarioId.imagenPerfil}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
+                      {reporte.usuarioId.nombreUsuario?.[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      {reporte.usuarioId.nombreUsuario}
+                    </p>
+                    <p className="text-xs text-gray-400 capitalize">
+                      {reporte.usuarioId.rol} ·{" "}
+                      {new Date(reporte.createdAt).toLocaleDateString("es-AR", {
+                        day: "numeric", month: "long", year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAutorPerfil(true)}
+                  className="text-xs border border-gray-200 rounded-full px-3 py-1 text-gray-500 hover:bg-gray-50"
+                >
+                  Ver perfil
+                </button>
+              </div>
+            )}
+
+            {/* 👇 ProfileModal adentro del div con stopPropagation */}
+            {showAutorPerfil && reporte.usuarioId && (
+              <ProfileModal
+                usuarioExterno={reporte.usuarioId}
+                onClose={() => setShowAutorPerfil(false)}
+              />
+            )}
           </>
         )}
       </div>

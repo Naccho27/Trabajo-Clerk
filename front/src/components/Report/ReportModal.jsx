@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
@@ -21,6 +21,43 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
   const [imagen, setImagen] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [direccion, setDireccion] = useState("Villa María");
+  const [ciudad, setCiudad] = useState("Villa María");
+  const [barrio, setBarrio] = useState("");
+
+  useEffect(() => {
+    const resolverDireccion = async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${ubicacion.lat}&lon=${ubicacion.lng}&format=json`
+        );
+        const data = await response.json();
+
+        const calle = data.address?.road;
+        const numero = data.address?.house_number;
+        if (calle) {
+          setDireccion(numero ? `${calle} ${numero}` : calle);
+        }
+
+        const ciudadResuelta =
+          data.address?.city ||
+          data.address?.town ||
+          data.address?.village ||
+          "Villa María";
+        setCiudad(ciudadResuelta);
+
+        const barrioResuelto =
+          data.address?.suburb ||
+          data.address?.neighbourhood ||
+          "";
+        setBarrio(barrioResuelto);
+
+      } catch (err) {
+        console.error("Error resolviendo dirección:", err);
+      }
+    };
+    resolverDireccion();
+  }, [ubicacion.lat, ubicacion.lng]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,8 +76,9 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       formData.append("descripcion", descripcion);
       formData.append("ubicacion[lat]", ubicacion.lat);
       formData.append("ubicacion[lng]", ubicacion.lng);
-      formData.append("ubicacion[direccion]", "Villa María");
-      formData.append("ubicacion[ciudad]", "Villa María");
+      formData.append("ubicacion[direccion]", direccion);
+      formData.append("ubicacion[ciudad]", ciudad);
+      formData.append("ubicacion[barrio]", barrio);
       formData.append("ubicacion[provincia]", "Córdoba");
       formData.append("ubicacion[pais]", "Argentina");
       if (imagen) formData.append("archivos", imagen);
@@ -52,13 +90,10 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       onSuccess();
       onClose();
     } catch (error) {
-       console.error("Error completo:", error);
-  console.error("Response:", error.response);
-  console.log(
-  "Data:",
-  JSON.stringify(error.response?.data, null, 2)
-);
-  console.error("Status:", error.response?.status);
+      console.error("Error completo:", error);
+      console.error("Response:", error.response);
+      console.log("Data:", JSON.stringify(error.response?.data, null, 2));
+      console.error("Status:", error.response?.status);
       setError("Error al crear el reporte, intentá de nuevo");
     } finally {
       setLoading(false);
@@ -115,7 +150,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
           {/* Imagen */}
           <div className="flex items-center gap-3">
             <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-               {imagen ? imagen.name : "Agregar foto (opcional)"}
+              {imagen ? imagen.name : "Agregar foto (opcional)"}
               <input
                 type="file"
                 accept="image/*"
@@ -130,9 +165,9 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Ubicación */}
+          {/* Ubicación resuelta */}
           <p className="text-xs text-gray-400">
-            📍 Lat: {ubicacion.lat.toFixed(5)} | Lng: {ubicacion.lng.toFixed(5)}
+            📍 {direccion}{barrio ? `, ${barrio}` : ""}, {ciudad}
           </p>
 
           {error && <p className="text-red-500 text-xs text-center">{error}</p>}
