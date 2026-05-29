@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 import ProfileModal from "../Profile/ProfileModal";
 
-export default function Navbar() {
+export default function Navbar({ onCrearReporte }) {
   const [showProfile, setShowProfile] = useState(false);
   const { user } = useUser();
 
@@ -23,6 +23,7 @@ export default function Navbar() {
           </button>
 
           <button
+            onClick={onCrearReporte}
             className="rounded-full w-14 h-14 flex items-center justify-center shadow-lg -mt-6"
             style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
           >
