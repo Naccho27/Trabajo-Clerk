@@ -8,7 +8,11 @@ import { useEffect, useState } from "react";
 
 import axios from "axios";
 
+import SearchBar from "./SearchBar";
+
 import { icons } from "../../assets/icons/icons.js";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const iconos = {
   baches: new L.Icon({
@@ -59,7 +63,7 @@ export default function MapView({ filtro = "todos" }) {
     const obtenerReportes = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3000/api/reportes/publicos",
+          `${API_URL}/reportes/publicos`,
         );
 
         console.log("REPORTES:", response.data);
@@ -103,11 +107,21 @@ export default function MapView({ filtro = "todos" }) {
   }
 
   return (
-    <MapContainer center={VILLA_MARIA} zoom={14} className="w-full h-full">
+    <MapContainer
+      center={VILLA_MARIA}
+      zoom={14}
+      minZoom={13}
+      maxZoom={18}
+      maxBounds={[[-32.55, -63.45], [-32.28, -63.10]]}
+      maxBoundsViscosity={1.0}
+      className="w-full h-full"
+    >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
       />
+
+      <SearchBar />
 
       {reportesFiltrados
         .filter(

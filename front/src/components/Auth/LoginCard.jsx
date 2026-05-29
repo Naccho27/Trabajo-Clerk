@@ -166,43 +166,43 @@ export default function LoginCard() {
     */
 
       const result = await signUp.create({
-  username,
-  emailAddress: email,
-  password,
-});
+        username,
+        emailAddress: email,
+        password,
+      });
 
-console.log("SIGNUP CREADO:", result);
+      console.log("SIGNUP CREADO:", result);
 
-/*
-|--------------------------------------------------
-| Si Clerk ya completó el signup
-|--------------------------------------------------
-*/
+      /*
+      |--------------------------------------------------
+      | Si Clerk ya completó el signup
+      |--------------------------------------------------
+      */
 
-if (result.status === "complete") {
+      if (result.status === "complete") {
 
-  await signOut();
+        await signOut();
 
-  alert(
-    "Cuenta creada correctamente. Ahora iniciá sesión."
-  );
+        alert(
+          "Cuenta creada correctamente. Ahora iniciá sesión."
+        );
 
-  setStep("email");
+        setStep("email");
 
-  return;
-}
+        return;
+      }
 
-/*
-|--------------------------------------------------
-| Si necesita verificación
-|--------------------------------------------------
-*/
+      /*
+      |--------------------------------------------------
+      | Si necesita verificación
+      |--------------------------------------------------
+      */
 
-await signUp.prepareEmailAddressVerification({
-  strategy: "email_code",
-});
+      await signUp.prepareEmailAddressVerification({
+        strategy: "email_code",
+      });
 
-setStep("verify");
+      setStep("verify");
     } catch (err) {
       console.log(err);
 
@@ -494,6 +494,16 @@ setStep("verify");
               className="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-full py-2 transition-colors disabled:opacity-60"
             >
               {loading ? "Cargando..." : "Registrarse"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("email");
+                setError("");
+              }}
+              className="text-gray-600 text-sm text-center hover:underline"
+            >
+              Ya tengo cuenta
             </button>
           </form>
         )}
