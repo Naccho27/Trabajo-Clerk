@@ -21,6 +21,12 @@ from "./modules/ciudadano/routes/reporte.routes.js";
 import supervisorRoutes
 from "./modules/supervisor/routes/supervisor.routes.js";
 
+import operatorRoutes 
+from "./modules/operator/routes/operator.routes.js";
+
+import adminRoutes
+from "./modules/admin/routes/admin.routes.js";
+
 import analyticsRoutes
 from "./modules/analytics/routes/analytics.routes.js";
 
@@ -62,6 +68,16 @@ app.use(
 app.use(
   "/api/supervisor",
   supervisorRoutes
+);
+
+app.use(
+  "/api/operator",
+  operatorRoutes
+);
+
+app.use(
+  "/api/admin",
+  adminRoutes
 );
 
 app.use(
