@@ -363,6 +363,13 @@ export default function LoginCard() {
             >
               Registrarse
             </button>
+            <button
+              type="button"
+              onClick={() => navigate("/mapa-publico")}
+              className="text-gray-500 text-sm text-center hover:underline"
+            >
+              Entrar sin cuenta
+            </button>
           </form>
         )}
 

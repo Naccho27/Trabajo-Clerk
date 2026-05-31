@@ -6,9 +6,12 @@ import ReportDetailModal from "../Report/ReportDetailModal.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// reemplazá el objeto ESTADO_BADGE
 const ESTADO_BADGE = {
-  resolved: { bg: "bg-green-100", text: "text-green-800", label: "Resuelto" },
-  rejected: { bg: "bg-red-100",   text: "text-red-700",   label: "Rechazado" },
+  open:        { bg: "bg-gray-100",   text: "text-gray-600",   label: "Pendiente" },
+  in_progress: { bg: "bg-yellow-100", text: "text-yellow-800", label: "En progreso" },
+  resolved:    { bg: "bg-green-100",  text: "text-green-800",  label: "Resuelto" },
+  rejected:    { bg: "bg-red-100",    text: "text-red-700",    label: "Rechazado" },
 };
 
 export default function HistorialModal({ onClose }) {

@@ -1,5 +1,6 @@
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
 import ProfileModal from "../Profile/ProfileModal.jsx";
@@ -14,8 +15,7 @@ const PRIORIDAD_BADGE = {
 };
 
 const ESTADO_BADGE = {
-  open:        { bg: "bg-blue-100",   text: "text-blue-800",   label: "Abierto" },
-  validated:   { bg: "bg-purple-100", text: "text-purple-800", label: "Validado" },
+  open:        { bg: "bg-gray-100",   text: "text-gray-600",   label: "Pendiente" },
   in_progress: { bg: "bg-yellow-100", text: "text-yellow-800", label: "En progreso" },
   resolved:    { bg: "bg-green-100",  text: "text-green-800",  label: "Resuelto" },
   rejected:    { bg: "bg-red-100",    text: "text-red-700",    label: "Rechazado" },
@@ -59,13 +59,13 @@ export default function ReportDetailModal({ reporteId, onClose }) {
     setTimeout(onClose, 280);
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[1001] bg-black/40 flex items-center justify-center px-4"
+      className="fixed inset-0 z-[1003] bg-black/40 flex items-center justify-center px-4"
       onClick={handleClose}
     >
       <div
-        className={`bg-white rounded-3xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto ${closing ? "slide-down" : "slide-up"}`}
+        className={`bg-white rounded-3xl p-6 pb-8 w-full max-w-md max-h-[80vh] overflow-y-auto ${closing ? "slide-down" : "slide-up"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {loading ? (
@@ -114,7 +114,11 @@ export default function ReportDetailModal({ reporteId, onClose }) {
             {/* Dirección */}
             {reporte.ubicacion?.direccion && (
               <p className="text-xs text-gray-400 mb-4">
-                📍 {reporte.ubicacion.direccion}, {reporte.ubicacion.ciudad}
+                📍 {reporte.ubicacion.direccion}
+                {reporte.ubicacion.ciudad &&
+                  reporte.ubicacion.ciudad !== reporte.ubicacion.direccion
+                  ? `, ${reporte.ubicacion.ciudad}`
+                  : ""}
               </p>
             )}
 
@@ -143,6 +147,24 @@ export default function ReportDetailModal({ reporteId, onClose }) {
                       src={url}
                       alt={`foto-${i + 1}`}
                       className="w-full h-28 object-cover rounded-xl border border-gray-100"
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Videos */}
+            {reporte.videos?.length > 0 && (
+              <>
+                <p className="text-xs text-gray-400 font-medium mb-2">Videos</p>
+                <div className="flex flex-col gap-2 mb-4">
+                  {reporte.videos.map((url, i) => (
+                    <video
+                      key={i}
+                      src={url}
+                      controls
+                      className="w-full rounded-xl border border-gray-100"
+                      style={{ maxHeight: "200px" }}
                     />
                   ))}
                 </div>
@@ -200,7 +222,6 @@ export default function ReportDetailModal({ reporteId, onClose }) {
               </div>
             )}
 
-            {/* 👇 ProfileModal adentro del div con stopPropagation */}
             {showAutorPerfil && reporte.usuarioId && (
               <ProfileModal
                 usuarioExterno={reporte.usuarioId}
@@ -210,6 +231,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

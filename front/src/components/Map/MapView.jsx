@@ -76,6 +76,10 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }
       ? reportes
       : reportes.filter((r) => r.categoria === filtro);
 
+  const reportesVisibles = reportesFiltrados.filter(
+  (r) => r.estado !== "open" && r.estado !== "rejected"
+);
+
   if (loading) {
     return (
       <div className="w-full h-full flex items-center justify-center">
@@ -128,7 +132,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }
         <ClickHandler modoCrear={modoCrear} onMapClick={handleMapClick} />
         <SearchBar />
 
-        {reportesFiltrados
+        {reportesVisibles
           .filter(
             (r) =>
               typeof r.ubicacion?.lat === "number" &&

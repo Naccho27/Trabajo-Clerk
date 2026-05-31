@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useMap } from "react-leaflet";
 
-function FlyToLocation({ position }) {
+function FlyToLocation({ position, onDone }) {
   const map = useMap();
   if (position) {
     map.flyTo(position, 18, { animate: true, duration: 1.5 });
+    onDone(); // 👈 limpia position inmediatamente después de disparar el fly
   }
   return null;
 }
@@ -43,7 +44,12 @@ export default function SearchBar() {
 
   return (
     <>
-      {position && <FlyToLocation position={position} />}
+      {position && (
+        <FlyToLocation
+          position={position}
+          onDone={() => setPosition(null)} // 👈 limpia después de volar
+        />
+      )}
       <form
         onSubmit={handleSearch}
         className="absolute top-16 left-0 right-0 z-[1000] flex flex-col items-center px-4 gap-2"

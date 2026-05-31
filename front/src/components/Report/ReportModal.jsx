@@ -4,6 +4,7 @@ import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
 
 const API_URL = import.meta.env.VITE_API_URL;
+const MAX_IMAGENES = 6;
 
 const categorias = [
   { id: "baches", label: "Bache", icon: icons.baches },
@@ -18,7 +19,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [imagen, setImagen] = useState(null);
+  const [imagenes, setImagenes] = useState([]); // 👈 array en vez de una sola
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [direccion, setDireccion] = useState("Villa María");
@@ -51,13 +52,32 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
           data.address?.neighbourhood ||
           "";
         setBarrio(barrioResuelto);
-
       } catch (err) {
         console.error("Error resolviendo dirección:", err);
       }
     };
     resolverDireccion();
   }, [ubicacion.lat, ubicacion.lng]);
+
+  const handleAgregarImagenes = (e) => {
+    const nuevas = Array.from(e.target.files);
+    setImagenes((prev) => {
+      const combinadas = [...prev, ...nuevas];
+      if (combinadas.length > MAX_IMAGENES) {
+        setError(`Máximo ${MAX_IMAGENES} fotos`);
+        return combinadas.slice(0, MAX_IMAGENES);
+      }
+      setError("");
+      return combinadas;
+    });
+    // reset input para permitir agregar la misma foto de nuevo si se eliminó
+    e.target.value = null;
+  };
+
+  const handleEliminarImagen = (index) => {
+    setImagenes((prev) => prev.filter((_, i) => i !== index));
+    setError("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,7 +101,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       formData.append("ubicacion[barrio]", barrio);
       formData.append("ubicacion[provincia]", "Córdoba");
       formData.append("ubicacion[pais]", "Argentina");
-      if (imagen) formData.append("archivos", imagen);
+      imagenes.forEach((img) => formData.append("archivos", img)); // 👈 todas las imágenes
 
       await axios.post(`${API_URL}/reportes`, formData, {
         headers: { Authorization: `Bearer ${token}` },
@@ -147,21 +167,43 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             className="border border-gray-300 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
           />
 
-          {/* Imagen */}
-          <div className="flex items-center gap-3">
-            <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-              {imagen ? imagen.name : "Agregar foto (opcional)"}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => setImagen(e.target.files[0])}
-              />
-            </label>
-            {imagen && (
-              <button type="button" onClick={() => setImagen(null)} className="text-red-400 text-sm">
-                ✕
-              </button>
+          {/* Imágenes */}
+          <div className="flex flex-col gap-2">
+            {/* previews */}
+            {imagenes.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {imagenes.map((img, i) => (
+                  <div key={i} className="relative">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      className="w-full h-20 object-cover rounded-xl border border-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleEliminarImagen(i)}
+                      className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* botón agregar — solo si no llegó al máximo */}
+            {imagenes.length < MAX_IMAGENES && (
+              <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 text-center">
+                {imagenes.length === 0
+                  ? "Agregar fotos o videos (opcional)"
+                  : `Agregar más (${imagenes.length}/${MAX_IMAGENES})`}
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleAgregarImagenes}
+                />
+              </label>
             )}
           </div>
 

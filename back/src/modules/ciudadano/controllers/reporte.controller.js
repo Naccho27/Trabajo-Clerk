@@ -294,7 +294,7 @@ export const actualizarReporte = async (req, res) => {
       });
     }
 
-    if (reporte.usuarioId?.toString() !== usuario._id.toString()) {
+    if (reporte.usuarioId?._id?.toString() !== usuario._id.toString()) {
       return res.status(403).json({
         ok: false,
         mensaje: "No autorizado",
@@ -308,7 +308,49 @@ export const actualizarReporte = async (req, res) => {
       });
     }
 
-    const actualizado = await actualizarReporteService(req.params.id, req.body);
+    /*
+    |--------------------------------------------------------------------------
+    | Imágenes existentes que el usuario conserva
+    |--------------------------------------------------------------------------
+    */
+    let imagenesExistentes = [];
+    if (req.body.imagenesExistentes) {
+      imagenesExistentes = Array.isArray(req.body.imagenesExistentes)
+        ? req.body.imagenesExistentes
+        : [req.body.imagenesExistentes];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Subir imágenes nuevas a Cloudinary
+    |--------------------------------------------------------------------------
+    */
+    let imagenesNuevas = [];
+    if (req.files && req.files.length > 0) {
+      for (const archivo of req.files) {
+        const resultado = await subirArchivoCloudinary(
+          archivo,
+          "urbanlog/reportes"
+        );
+        if (resultado.resource_type !== "video") {
+          imagenesNuevas.push(resultado.url);
+        }
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Combinar imágenes y actualizar
+    |--------------------------------------------------------------------------
+    */
+    const imagenes = [...imagenesExistentes, ...imagenesNuevas];
+
+    const actualizado = await actualizarReporteService(req.params.id, {
+      titulo: req.body.titulo,
+      categoria: req.body.categoria,
+      descripcion: req.body.descripcion,
+      imagenes,
+    });
 
     res.json({
       ok: true,
@@ -321,7 +363,6 @@ export const actualizarReporte = async (req, res) => {
     });
   }
 };
-
 /*
 |--------------------------------------------------------------------------
 | Eliminar
@@ -345,7 +386,7 @@ export const eliminarReporte = async (req, res) => {
       });
     }
 
-    if (reporte.usuarioId?.toString() !== usuario._id.toString()) {
+    if (reporte.usuarioId?._id?.toString() !== usuario._id.toString()) {
       return res.status(403).json({
         ok: false,
         mensaje: "No autorizado",

@@ -1,7 +1,5 @@
 import { Router } from "express";
-
 import { clerkMiddleware, requireAuth } from "@clerk/express";
-
 import {
   crearReporte,
   obtenerReportesPublicos,
@@ -12,19 +10,11 @@ import {
   actualizarReporte,
   eliminarReporte,
 } from "../controllers/reporte.controller.js";
-
 import { validate } from "../../../shared/middlewares/validate.middleware.js";
-
-import {
-  crearReporteSchema,
-  actualizarReporteSchema,
-} from "../../../shared/validators/reporte.validator.js";
-
+import { crearReporteSchema } from "../../../shared/validators/reporte.validator.js";
 import { upload } from "../../../shared/middlewares/upload.middleware.js";
 
 const router = Router();
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -37,8 +27,6 @@ router.get(
   obtenerReportesPublicos
 );
 
-
-
 /*
 |--------------------------------------------------------------------------
 | Middleware Clerk
@@ -46,8 +34,6 @@ router.get(
 */
 
 router.use(clerkMiddleware());
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -58,7 +44,7 @@ router.use(clerkMiddleware());
 router.post(
   "/",
   requireAuth(),
-  upload.array("archivos", 3),
+  upload.array("archivos", 6),
   crearReporte,
 );
 
@@ -80,14 +66,17 @@ router.get(
   obtenerHistorial
 );
 
+/*
+|--------------------------------------------------------------------------
+| Actualizar — con upload para manejar imágenes nuevas
+|--------------------------------------------------------------------------
+*/
+
 router.put(
   "/:id",
-
   requireAuth(),
-
-  validate(actualizarReporteSchema),
-
-  actualizarReporte
+  upload.array("archivos", 3), // 👈 agregado
+  actualizarReporte,           // 👈 sacado el validator
 );
 
 router.delete(
@@ -95,8 +84,6 @@ router.delete(
   requireAuth(),
   eliminarReporte
 );
-
-
 
 /*
 |--------------------------------------------------------------------------
