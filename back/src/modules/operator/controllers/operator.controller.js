@@ -29,7 +29,8 @@ export const getInProgressReports = async (req, res, next) => {
 
 export const getResolvedReports = async (req, res, next) => {
   try {
-    const reportes = await getResolvedReportsService();
+    const operadorId = req.user._id; // 👈 viene del authMiddleware
+    const reportes = await getResolvedReportsService(operadorId);
     res.status(200).json({ ok: true, reportes });
   } catch (error) {
     next(error);

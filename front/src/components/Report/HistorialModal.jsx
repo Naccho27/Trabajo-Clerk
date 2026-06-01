@@ -24,7 +24,7 @@ export default function HistorialModal({ onClose }) {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const token = await getToken({ template: "backend" });
+        const token = await getToken();
         const { data } = await axios.get(`${API_URL}/reportes/historial`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -44,7 +44,8 @@ export default function HistorialModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1001] bg-black/40" onClick={handleClose}>
+    // HistorialModal.jsx
+<div className="fixed inset-0 z-[1001] bg-black/40" onClick={handleClose}>
       <div
         className={`absolute bottom-0 left-1/2 -translate-x-1/2 bg-white rounded-t-3xl p-6 pb-20 max-h-[85vh] overflow-y-auto w-full max-w-2xl ${closing ? "slide-down" : "slide-up"}`}
         onClick={(e) => e.stopPropagation()}

@@ -33,8 +33,16 @@ export const getInProgressReportsService = async () => {
 |--------------------------------------------------------------
 */
 
-export const getResolvedReportsService = async () => {
-  return await Reporte.find({ estado: { $in: ["resolved", "rejected"] } })
+export const getResolvedReportsService = async (operadorId) => {
+  return await Reporte.find({
+    estado: { $in: ["resolved", "rejected"] },
+    historialEstados: {
+      $elemMatch: {
+        estado: { $in: ["resolved", "rejected"] },
+        usuarioId: operadorId,
+      }
+    }
+  })
     .populate("usuarioId")
     .populate("supervisorId")
     .sort({ updatedAt: -1 });
