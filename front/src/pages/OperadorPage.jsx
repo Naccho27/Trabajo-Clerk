@@ -20,8 +20,8 @@ export default function OperadorPage() {
   const [historial, setHistorial]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [selectedReporte, setSelectedReporte] = useState(null);
-  const [comentarios, setComentarios] = useState([]);       // 👈 nuevo
-  const [loadingDetalle, setLoadingDetalle] = useState(false); // 👈 nuevo
+  const [comentarios, setComentarios] = useState([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
 
   const cargar = async () => {
     setLoading(true);
@@ -45,7 +45,6 @@ export default function OperadorPage() {
     }
   };
 
-  // 👈 nuevo: fetch del detalle con comentarios
   const handleVerDetalle = async (reporteId) => {
     setLoadingDetalle(true);
     try {
@@ -86,64 +85,67 @@ export default function OperadorPage() {
     <div className="w-screen h-screen flex flex-col bg-gray-50">
       <Header />
 
-      <div className="flex-1 overflow-y-auto pt-16 px-4 pb-6">
+      <div className="flex-1 flex justify-center overflow-hidden">
+        <div className="w-full max-w-md flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto pt-16 px-4 pb-6">
 
-        <div className="flex items-center justify-center my-4">
-          <span
-            className="text-sm font-semibold px-5 py-1.5 rounded-full text-white"
-            style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
-          >
-            Incidentes validados
-          </span>
-        </div>
-
-        <div className="flex gap-2 mb-4">
-          {TABS.map((tab) => {
-            const count =
-              tab.id === "en_progreso" ? countEnProgreso :
-              tab.id === "historial"   ? historial.length : 0;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setTabActiva(tab.id)}
-                className={`flex-1 py-2 rounded-full text-xs font-semibold border transition-all ${
-                  tabActiva === tab.id
-                    ? "text-white border-transparent"
-                    : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                }`}
-                style={tabActiva === tab.id
-                  ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
-                  : {}
-                }
+            <div className="flex items-center justify-center my-4">
+              <span
+                className="text-sm font-semibold px-5 py-1.5 rounded-full text-white"
+                style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
               >
-                {tab.label}{count > 0 && ` (${count})`}
-              </button>
-            );
-          })}
-        </div>
+                Incidentes validados
+              </span>
+            </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <p className="text-sm text-gray-400">Cargando incidentes...</p>
+            <div className="flex gap-2 mb-4">
+              {TABS.map((tab) => {
+                const count =
+                  tab.id === "en_progreso" ? countEnProgreso :
+                  tab.id === "historial"   ? historial.length : 0;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setTabActiva(tab.id)}
+                    className={`flex-1 py-2 rounded-full text-xs font-semibold border transition-all ${
+                      tabActiva === tab.id
+                        ? "text-white border-transparent"
+                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                    }`}
+                    style={tabActiva === tab.id
+                      ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
+                      : {}
+                    }
+                  >
+                    {tab.label}{count > 0 && ` (${count})`}
+                  </button>
+                );
+              })}
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-sm text-gray-400">Cargando incidentes...</p>
+              </div>
+            ) : reportesActivos.length === 0 ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-sm text-gray-400">No hay incidentes en esta sección</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {reportesActivos.map((reporte) => (
+                  <OperadorReporteCard
+                    key={reporte._id}
+                    reporte={reporte}
+                    onClick={() => handleVerDetalle(reporte._id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ) : reportesActivos.length === 0 ? (
-          <div className="flex items-center justify-center h-40">
-            <p className="text-sm text-gray-400">No hay incidentes en esta sección</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {reportesActivos.map((reporte) => (
-              <OperadorReporteCard
-                key={reporte._id}
-                reporte={reporte}
-                onClick={() => handleVerDetalle(reporte._id)} // 👈 cambiado
-              />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Loading detalle */}
       {loadingDetalle && (
         <div className="fixed inset-0 z-[1002] bg-black/20 flex items-center justify-center">
           <p className="text-white text-sm font-medium">Cargando...</p>
@@ -153,9 +155,9 @@ export default function OperadorPage() {
       {selectedReporte && (
         <OperadorReporteDetail
           reporte={selectedReporte}
-          comentarios={comentarios}        // 👈 nuevo
-          onClose={handleCerrar}           // 👈 cambiado
-          onActualizar={handleActualizar}  // 👈 cambiado
+          comentarios={comentarios}
+          onClose={handleCerrar}
+          onActualizar={handleActualizar}
         />
       )}
     </div>

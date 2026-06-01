@@ -4,6 +4,7 @@ const ESTADO_BADGE = {
   validated:   { bg: "bg-purple-100", text: "text-purple-800", label: "Validado" },
   in_progress: { bg: "bg-yellow-100", text: "text-yellow-800", label: "En progreso" },
   resolved:    { bg: "bg-green-100",  text: "text-green-800",  label: "Resuelto" },
+  rejected:    { bg: "bg-red-100",    text: "text-red-700",    label: "Rechazado" },
 };
 
 const PRIORIDAD_COLOR = {

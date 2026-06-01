@@ -77,7 +77,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }
       : reportes.filter((r) => r.categoria === filtro);
 
   const reportesVisibles = reportesFiltrados.filter(
-  (r) => r.estado !== "open" && r.estado !== "rejected"
+  (r) => r.estado === "in_progress"
 );
 
   if (loading) {
@@ -87,7 +87,13 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }
       </div>
     );
   }
-
+console.log("VISIBLES:", reportesVisibles.map(r => ({
+  titulo: r.titulo,
+  estado: r.estado,
+  lat: r.ubicacion?.lat,
+  lng: r.ubicacion?.lng,
+  latType: typeof r.ubicacion?.lat
+})));
   return (
     <>
       {modoCrear && !showReportModal && (

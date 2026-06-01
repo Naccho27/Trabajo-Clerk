@@ -29,12 +29,12 @@ export const getInProgressReportsService = async () => {
 
 /*
 |--------------------------------------------------------------
-| Obtener reportes resueltos 👈 nuevo
+| Obtener reportes resueltos o rechazados
 |--------------------------------------------------------------
 */
 
 export const getResolvedReportsService = async () => {
-  return await Reporte.find({ estado: "resolved" })
+  return await Reporte.find({ estado: { $in: ["resolved", "rejected"] } })
     .populate("usuarioId")
     .populate("supervisorId")
     .sort({ updatedAt: -1 });
