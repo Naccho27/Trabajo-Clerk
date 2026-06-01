@@ -9,7 +9,7 @@ import {
   rechazarReporteService,
 
   cambiarCategoriaService,
-  
+
   cambiarPrioridadService,
 
   cambiarEstadoService,

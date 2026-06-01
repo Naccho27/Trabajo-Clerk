@@ -9,25 +9,31 @@ export default function ProfileModal({ onClose, usuarioExterno = null }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [reportes, setReportes] = useState([]);
+  const [usuarioBD, setUsuarioBD] = useState(null);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
 
-  const esPerfliPropio = !usuarioExterno;
+  const esPerfilPropio = !usuarioExterno;
 
   useEffect(() => {
-    const cargarReportes = async () => {
+    const cargar = async () => {
       try {
         const token = await getToken({ template: "backend" });
 
-        if (esPerfliPropio) {
-          // perfil propio — endpoint privado
+        if (esPerfilPropio) {
+          // 👇 traer usuario real de la BD para obtener el rol correcto
+          const { data: dataUsuario } = await axios.get(
+            `${API_URL}/auth/me`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setUsuarioBD(dataUsuario.usuario);
+
           const { data } = await axios.get(
             `${API_URL}/reportes/mis-reportes`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setReportes(data.reportes || []);
         } else {
-          // perfil ajeno — filtramos desde públicos
           const { data } = await axios.get(`${API_URL}/reportes/publicos`);
           const suyos = (data.reportes || []).filter(
             (r) => r.usuarioId?.toString() === usuarioExterno._id?.toString()
@@ -35,12 +41,12 @@ export default function ProfileModal({ onClose, usuarioExterno = null }) {
           setReportes(suyos);
         }
       } catch (error) {
-        console.error("Error cargando reportes:", error);
+        console.error("Error cargando perfil:", error);
       } finally {
         setLoading(false);
       }
     };
-    cargarReportes();
+    cargar();
   }, [usuarioExterno?._id]);
 
   const handleClose = () => {
@@ -48,20 +54,22 @@ export default function ProfileModal({ onClose, usuarioExterno = null }) {
     setTimeout(onClose, 280);
   };
 
-  // datos a mostrar según si es propio o ajeno
-  const nombre = esPerfliPropio
+  const nombre = esPerfilPropio
     ? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
     : usuarioExterno.nombreUsuario;
 
-  const email = esPerfliPropio
+  const email = esPerfilPropio
     ? user?.primaryEmailAddress?.emailAddress
     : null;
 
-  const imagenUrl = esPerfliPropio
+  const imagenUrl = esPerfilPropio
     ? user?.imageUrl
     : usuarioExterno.imagenPerfil;
 
-  const rol = esPerfliPropio ? "ciudadano" : usuarioExterno.rol;
+  // 👇 rol real desde la BD
+  const rol = esPerfilPropio
+    ? (usuarioBD?.rol ?? "...")
+    : usuarioExterno.rol;
 
   return (
     <div className="fixed inset-0 z-[1002] bg-black/40" onClick={handleClose}>
@@ -69,7 +77,6 @@ export default function ProfileModal({ onClose, usuarioExterno = null }) {
         className={`absolute bottom-0 left-1/2 -translate-x-1/2 bg-white rounded-t-3xl p-6 pb-20 max-h-[85vh] overflow-y-auto w-full max-w-2xl ${closing ? "slide-down" : "slide-up"}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-xs text-pink-500 font-semibold">Perfil</p>

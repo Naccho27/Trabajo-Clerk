@@ -2,24 +2,58 @@ import {
   getAuth
 } from "@clerk/express";
 
+import Usuario from
+  "../../ciudadano/models/Usuario.js";
+
 const authMiddleware =
-  (req, res, next) => {
+  async (req, res, next) => {
 
-    const auth =
-      getAuth(req);
+    try {
 
-    if (!auth.userId) {
+      const auth =
+        getAuth(req);
 
-      return res.status(401).json({
+      if (!auth.userId) {
+
+        return res.status(401).json({
+          ok: false,
+          mensaje:
+            "No autorizado"
+        });
+
+      }
+
+      const usuario =
+        await Usuario.findOne({
+          clerkId: auth.userId
+        });
+
+      if (!usuario) {
+
+        return res.status(404).json({
+          ok: false,
+          mensaje:
+            "Usuario no encontrado"
+        });
+
+      }
+
+      req.auth = auth;
+
+      req.user = usuario;
+
+      next();
+
+    } catch (error) {
+
+      return res.status(500).json({
         ok: false,
         mensaje:
-          "No autorizado"
+          error.message
       });
+
     }
 
-    req.auth = auth;
-
-    next();
   };
 
 export default authMiddleware;

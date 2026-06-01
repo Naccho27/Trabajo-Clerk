@@ -33,6 +33,7 @@ function Badge({ config }) {
 export default function ReportDetailModal({ reporteId, onClose }) {
   const { getToken } = useAuth();
   const [reporte, setReporte] = useState(null);
+  const [comentarios, setComentarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [showAutorPerfil, setShowAutorPerfil] = useState(false);
@@ -45,6 +46,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
           headers: { Authorization: `Bearer ${token}` },
         });
         setReporte(data.reporte ?? data);
+        setComentarios(data.comentarios || []);
       } catch (err) {
         console.error("Error cargando reporte:", err);
       } finally {
@@ -192,19 +194,14 @@ export default function ReportDetailModal({ reporteId, onClose }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {reporte.usuarioId.imagenPerfil ? (
-                    <img
-                      src={reporte.usuarioId.imagenPerfil}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
+                    <img src={reporte.usuarioId.imagenPerfil} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
                       {reporte.usuarioId.nombreUsuario?.[0]?.toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {reporte.usuarioId.nombreUsuario}
-                    </p>
+                    <p className="text-sm font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
                     <p className="text-xs text-gray-400 capitalize">
                       {reporte.usuarioId.rol} ·{" "}
                       {new Date(reporte.createdAt).toLocaleDateString("es-AR", {
@@ -220,6 +217,34 @@ export default function ReportDetailModal({ reporteId, onClose }) {
                   Ver perfil
                 </button>
               </div>
+            )}
+
+            {/* Comentarios del operador */}
+            {comentarios.length > 0 && (
+              <>
+                <hr className="mb-4 mt-4" />
+                <p className="text-xs text-gray-400 font-medium mb-3">Comentarios</p>
+                <div className="flex flex-col gap-3">
+                  {comentarios.map((c, i) => (
+                    <div key={i} className="bg-gray-50 rounded-2xl px-4 py-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
+                          {c.usuarioId?.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <p className="text-xs font-medium text-gray-700">
+                          {c.usuarioId?.nombreUsuario ?? "Operador"}
+                        </p>
+                        <p className="text-xs text-gray-400 ml-auto">
+                          {new Date(c.createdAt).toLocaleDateString("es-AR", {
+                            day: "numeric", month: "short",
+                          })}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-600">{c.mensaje}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
 
             {showAutorPerfil && reporte.usuarioId && (

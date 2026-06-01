@@ -1,9 +1,6 @@
 import { useSignIn, useSignUp, useClerk } from "@clerk/clerk-react";
-
 import { useState } from "react";
-
 import { EyeIcon, EyeOffIcon } from "./EyeIcons";
-
 import { useNavigate } from "react-router-dom";
 
 export default function LoginCard() {
@@ -14,11 +11,8 @@ export default function LoginCard() {
   */
 
   const { signIn, setActive, isLoaded: signInLoaded } = useSignIn();
-
   const { signUp, isLoaded: signUpLoaded } = useSignUp();
-
   const { signOut } = useClerk();
-
   const navigate = useNavigate();
 
   /*
@@ -28,23 +22,14 @@ export default function LoginCard() {
   */
 
   const [step, setStep] = useState("email");
-
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
-
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [username, setUsername] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
-
   const [showConfirm, setShowConfirm] = useState(false);
-
   const [code, setCode] = useState("");
-
   const [error, setError] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   /*
@@ -55,15 +40,9 @@ export default function LoginCard() {
 
   const handleContinueEmail = (e) => {
     e.preventDefault();
-
-    if (!email) {
-      return setError("Ingresá tu email o nombre de usuario");
-    }
-
+    if (!email) return setError("Ingresá tu email o nombre de usuario");
     setError("");
-
     setPassword("");
-
     setStep("password");
   };
 
@@ -75,32 +54,18 @@ export default function LoginCard() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!signInLoaded) return;
-
     setLoading(true);
-
     setError("");
-
     try {
-      const result = await signIn.create({
-        identifier: email,
-
-        password,
-      });
-
+      const result = await signIn.create({ identifier: email, password });
       console.log(result);
-
       if (result.status === "complete") {
-        await setActive({
-          session: result.createdSessionId,
-        });
-
-        navigate("/mapa");
+        await setActive({ session: result.createdSessionId });
+        navigate("/"); // 👈 cambiado de /mapa a /
       }
     } catch (err) {
       console.log(err);
-
       setError(err.errors?.[0]?.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
@@ -115,13 +80,10 @@ export default function LoginCard() {
 
   const handleGoogle = async () => {
     if (!signInLoaded) return;
-
     await signIn.authenticateWithRedirect({
       strategy: "oauth_google",
-
       redirectUrl: "/sso-callback",
-
-      redirectUrlComplete: "/mapa",
+      redirectUrlComplete: "/", // 👈 cambiado de /mapa a /
     });
   };
 
@@ -133,44 +95,29 @@ export default function LoginCard() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
     if (!signUpLoaded) return;
 
     /*
-  |--------------------------------------------------
-  | VALIDACIONES
-  |--------------------------------------------------
-  */
+    |--------------------------------------------------
+    | VALIDACIONES
+    |--------------------------------------------------
+    */
 
-    if (!username || !email || !password) {
-      return setError("Completá todos los campos");
-    }
-
-    if (password !== confirmPassword) {
-      return setError("Las contraseñas no coinciden");
-    }
-
-    if (password.length < 8) {
-      return setError("La contraseña debe tener al menos 8 caracteres");
-    }
+    if (!username || !email || !password) return setError("Completá todos los campos");
+    if (password !== confirmPassword) return setError("Las contraseñas no coinciden");
+    if (password.length < 8) return setError("La contraseña debe tener al menos 8 caracteres");
 
     setLoading(true);
-
     setError("");
 
     try {
       /*
-    |--------------------------------------------------
-    | CREAR USUARIO
-    |--------------------------------------------------
-    */
+      |--------------------------------------------------
+      | CREAR USUARIO
+      |--------------------------------------------------
+      */
 
-      const result = await signUp.create({
-        username,
-        emailAddress: email,
-        password,
-      });
-
+      const result = await signUp.create({ username, emailAddress: email, password });
       console.log("SIGNUP CREADO:", result);
 
       /*
@@ -180,15 +127,9 @@ export default function LoginCard() {
       */
 
       if (result.status === "complete") {
-
         await signOut();
-
-        alert(
-          "Cuenta creada correctamente. Ahora iniciá sesión."
-        );
-
+        alert("Cuenta creada correctamente. Ahora iniciá sesión.");
         setStep("email");
-
         return;
       }
 
@@ -198,14 +139,10 @@ export default function LoginCard() {
       |--------------------------------------------------
       */
 
-      await signUp.prepareEmailAddressVerification({
-        strategy: "email_code",
-      });
-
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setStep("verify");
     } catch (err) {
       console.log(err);
-
       setError(err.errors?.[0]?.message || "Error al registrarse");
     } finally {
       setLoading(false);
@@ -218,74 +155,58 @@ export default function LoginCard() {
   |------------------------------------------------------------------
   */
 
-  /*
-|------------------------------------------------------------------
-| VERIFY EMAIL
-|------------------------------------------------------------------
-*/
-
   const handleVerify = async (e) => {
     e.preventDefault();
-
     if (!signUpLoaded) return;
-
     setLoading(true);
-
     setError("");
-
     try {
-      const result = await signUp.attemptEmailAddressVerification({
-        code,
-      });
-
+      const result = await signUp.attemptEmailAddressVerification({ code });
       console.log(result);
 
       /*
-    |--------------------------------------------------
-    | VERIFY COMPLETO
-    |--------------------------------------------------
-    */
+      |--------------------------------------------------
+      | VERIFY COMPLETO
+      |--------------------------------------------------
+      */
 
       if (result.status === "complete") {
         /*
-      |--------------------------------------------------
-      | Cerrar sesión automática de Clerk
-      |--------------------------------------------------
-      */
+        |--------------------------------------------------
+        | Cerrar sesión automática de Clerk
+        |--------------------------------------------------
+        */
 
         await signOut();
 
         /*
-      |--------------------------------------------------
-      | Limpiar states
-      |--------------------------------------------------
-      */
+        |--------------------------------------------------
+        | Limpiar states
+        |--------------------------------------------------
+        */
 
         setCode("");
-
         setPassword("");
-
         setConfirmPassword("");
 
         /*
-      |--------------------------------------------------
-      | Volver al login
-      |--------------------------------------------------
-      */
+        |--------------------------------------------------
+        | Volver al login
+        |--------------------------------------------------
+        */
 
         setStep("email");
 
         /*
-      |--------------------------------------------------
-      | Mensaje
-      |--------------------------------------------------
-      */
+        |--------------------------------------------------
+        | Mensaje
+        |--------------------------------------------------
+        */
 
         alert("Cuenta creada correctamente. Ahora iniciá sesión.");
       }
     } catch (err) {
       console.log(err);
-
       setError(err.errors?.[0]?.message || "Código incorrecto");
     } finally {
       setLoading(false);
@@ -297,7 +218,8 @@ export default function LoginCard() {
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 w-full max-w-xs sm:max-w-sm">
         <h1 className="text-3xl font-bold text-center mb-1">
           Urban
-          <span className="text-blue-500">Log</span>
+          {/* 👇 degradado igual que el header */}
+          <span className="bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">Log</span>
         </h1>
 
         {/* ===================================================== */}
@@ -324,8 +246,7 @@ export default function LoginCard() {
             </button>
 
             <div className="flex items-center gap-2 text-gray-400 text-sm">
-              <hr className="flex-1 border-gray-300" />
-              O
+              <hr className="flex-1 border-gray-300" />O
               <hr className="flex-1 border-gray-300" />
             </div>
 
@@ -337,9 +258,7 @@ export default function LoginCard() {
               className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70"
             />
 
-            {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
             <button
               type="submit"
@@ -350,19 +269,12 @@ export default function LoginCard() {
 
             <button
               type="button"
-              onClick={() => {
-                setStep("register");
-
-                setError("");
-
-                setPassword("");
-
-                setConfirmPassword("");
-              }}
+              onClick={() => { setStep("register"); setError(""); setPassword(""); setConfirmPassword(""); }}
               className="border border-blue-500 text-blue-500 hover:bg-blue-50 font-semibold rounded-full py-2 transition-colors"
             >
               Registrarse
             </button>
+
             <button
               type="button"
               onClick={() => navigate("/mapa-publico")}
@@ -385,11 +297,7 @@ export default function LoginCard() {
 
             <button
               type="button"
-              onClick={() => {
-                setStep("email");
-
-                setError("");
-              }}
+              onClick={() => { setStep("email"); setError(""); }}
               className="border border-gray-400 rounded-full py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
             >
               Cambiar método
@@ -403,7 +311,6 @@ export default function LoginCard() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="border border-gray-400 rounded-full py-2 px-4 pr-10 text-sm outline-none focus:border-blue-500 w-full bg-white/70"
               />
-
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -413,9 +320,7 @@ export default function LoginCard() {
               </button>
             </div>
 
-            {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
             <button
               type="submit"
@@ -461,7 +366,6 @@ export default function LoginCard() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="border border-gray-400 rounded-full py-2 px-4 pr-10 text-sm outline-none focus:border-blue-500 w-full bg-white/70"
               />
-
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -479,7 +383,6 @@ export default function LoginCard() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="border border-gray-400 rounded-full py-2 px-4 pr-10 text-sm outline-none focus:border-blue-500 w-full bg-white/70"
               />
-
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
@@ -489,9 +392,7 @@ export default function LoginCard() {
               </button>
             </div>
 
-            {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
             <div id="clerk-captcha"></div>
 
@@ -502,12 +403,10 @@ export default function LoginCard() {
             >
               {loading ? "Cargando..." : "Registrarse"}
             </button>
+
             <button
               type="button"
-              onClick={() => {
-                setStep("email");
-                setError("");
-              }}
+              onClick={() => { setStep("email"); setError(""); }}
               className="text-gray-600 text-sm text-center hover:underline"
             >
               Ya tengo cuenta
@@ -533,9 +432,7 @@ export default function LoginCard() {
               className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70 text-center"
             />
 
-            {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
             <button
               type="submit"
