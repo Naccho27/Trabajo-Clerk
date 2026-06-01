@@ -20,6 +20,8 @@ export default function OperadorPage() {
   const [historial, setHistorial]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [selectedReporte, setSelectedReporte] = useState(null);
+  const [comentarios, setComentarios] = useState([]);       // 👈 nuevo
+  const [loadingDetalle, setLoadingDetalle] = useState(false); // 👈 nuevo
 
   const cargar = async () => {
     setLoading(true);
@@ -41,6 +43,34 @@ export default function OperadorPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 👈 nuevo: fetch del detalle con comentarios
+  const handleVerDetalle = async (reporteId) => {
+    setLoadingDetalle(true);
+    try {
+      const token = await getToken({ template: "backend" });
+      const { data } = await axios.get(
+        `${API_URL}/operator/reportes/${reporteId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedReporte(data.reporte);
+      setComentarios(data.comentarios || []);
+    } catch (err) {
+      console.error("Error al cargar detalle:", err);
+    } finally {
+      setLoadingDetalle(false);
+    }
+  };
+
+  const handleCerrar = () => {
+    setSelectedReporte(null);
+    setComentarios([]);
+  };
+
+  const handleActualizar = async () => {
+    if (selectedReporte) await handleVerDetalle(selectedReporte._id);
+    cargar();
   };
 
   useEffect(() => { cargar(); }, []);
@@ -106,21 +136,26 @@ export default function OperadorPage() {
               <OperadorReporteCard
                 key={reporte._id}
                 reporte={reporte}
-                onClick={() => setSelectedReporte(reporte)}
+                onClick={() => handleVerDetalle(reporte._id)} // 👈 cambiado
               />
             ))}
           </div>
         )}
       </div>
 
+      {/* Loading detalle */}
+      {loadingDetalle && (
+        <div className="fixed inset-0 z-[1002] bg-black/20 flex items-center justify-center">
+          <p className="text-white text-sm font-medium">Cargando...</p>
+        </div>
+      )}
+
       {selectedReporte && (
         <OperadorReporteDetail
           reporte={selectedReporte}
-          onClose={() => setSelectedReporte(null)}
-          onActualizar={() => {
-            setSelectedReporte(null);
-            cargar();
-          }}
+          comentarios={comentarios}        // 👈 nuevo
+          onClose={handleCerrar}           // 👈 cambiado
+          onActualizar={handleActualizar}  // 👈 cambiado
         />
       )}
     </div>

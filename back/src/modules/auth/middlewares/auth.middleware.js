@@ -5,8 +5,7 @@ import {
 import Usuario from
   "../../ciudadano/models/Usuario.js";
 
-const authMiddleware =
-  async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
 
     try {
 

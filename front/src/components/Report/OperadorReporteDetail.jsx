@@ -2,21 +2,22 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
+import { useAuth } from "@clerk/clerk-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ESTADO_BADGE = {
-  validated:   { bg: "bg-purple-100", text: "text-purple-800", label: "Validado" },
+  validated: { bg: "bg-purple-100", text: "text-purple-800", label: "Validado" },
   in_progress: { bg: "bg-yellow-100", text: "text-yellow-800", label: "En progreso" },
-  resolved:    { bg: "bg-green-100",  text: "text-green-800",  label: "Resuelto" },
-  rejected:    { bg: "bg-red-100",    text: "text-red-700",    label: "Rechazado" },
+  resolved: { bg: "bg-green-100", text: "text-green-800", label: "Resuelto" },
+  rejected: { bg: "bg-red-100", text: "text-red-700", label: "Rechazado" },
 };
 
 const PRIORIDAD_BADGE = {
-  low:      { bg: "bg-gray-100",   text: "text-gray-600",   label: "Baja" },
-  medium:   { bg: "bg-blue-100",   text: "text-blue-800",   label: "Media" },
-  high:     { bg: "bg-amber-100",  text: "text-amber-800",  label: "Alta" },
-  critical: { bg: "bg-red-100",    text: "text-red-700",    label: "Crítica" },
+  low: { bg: "bg-gray-100", text: "text-gray-600", label: "Baja" },
+  medium: { bg: "bg-blue-100", text: "text-blue-800", label: "Media" },
+  high: { bg: "bg-amber-100", text: "text-amber-800", label: "Alta" },
+  critical: { bg: "bg-red-100", text: "text-red-700", label: "Crítica" },
 };
 
 function Badge({ config }) {
@@ -28,13 +29,14 @@ function Badge({ config }) {
   );
 }
 
-export default function OperadorReporteDetail({ reporte, onClose, onActualizar }) {
-  const [comentario, setComentario]           = useState("");
+export default function OperadorReporteDetail({ reporte, comentarios = [], onClose, onActualizar }) {
+  const { getToken } = useAuth();
+  const [comentario, setComentario] = useState("");
   const [loadingComentario, setLoadingComentario] = useState(false);
-  const [loadingEstado, setLoadingEstado]     = useState(false);
+  const [loadingEstado, setLoadingEstado] = useState(false);
   const [loadingResolver, setLoadingResolver] = useState(false);
-  const [error, setError]                     = useState("");
-  const [closing, setClosing]                 = useState(false);
+  const [error, setError] = useState("");
+  const [closing, setClosing] = useState(false);
 
   const handleClose = () => {
     setClosing(true);
@@ -45,9 +47,11 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
     setLoadingEstado(true);
     setError("");
     try {
+      const token = await getToken({ template: "backend" }); // 👈
       await axios.patch(
         `${API_URL}/operator/reportes/${reporte._id}/status`,
-        { status: nuevoEstado }
+        { status: nuevoEstado },
+        { headers: { Authorization: `Bearer ${token}` } } // 👈
       );
       onActualizar();
       handleClose();
@@ -64,9 +68,11 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
     setLoadingComentario(true);
     setError("");
     try {
+      const token = await getToken({ template: "backend" }); // 👈
       await axios.patch(
         `${API_URL}/operator/reportes/${reporte._id}/comentario`,
-        { texto: comentario }
+        { texto: comentario },
+        { headers: { Authorization: `Bearer ${token}` } } // 👈
       );
       setComentario("");
       onActualizar();
@@ -82,7 +88,15 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
     setLoadingResolver(true);
     setError("");
     try {
-      await axios.patch(`${API_URL}/operator/reportes/${reporte._id}/resolver`);
+      const token = await getToken({ template: "backend" }); // 👈
+          console.log("TOKEN:", token ? token.substring(0, 20) + "..." : "NULL");
+    console.log("REPORTE ID:", reporte._id);
+    console.log("TEXTO:", comentario);
+      await axios.patch(
+        `${API_URL}/operator/reportes/${reporte._id}/resolver`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } } // 👈
+      );
       onActualizar();
       handleClose();
     } catch (err) {
@@ -95,7 +109,7 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1003] bg-black/40 flex items-center justify-center px-4"
+      className="fixed inset-0 bg-black/40 flex items-center justify-center px-4"
       onClick={handleClose}
     >
       <div
@@ -159,10 +173,35 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
 
         <hr className="mb-4" />
 
+        {/* Comentarios — siempre visibles */}
+        {comentarios.length > 0 && (
+          <>
+            <p className="text-xs text-gray-400 font-medium mb-2">Comentarios</p>
+            <div className="flex flex-col gap-2 mb-4">
+              {comentarios.map((c) => (
+                <div key={c._id} className="bg-gray-50 rounded-2xl px-4 py-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-gray-700">
+                      {c.usuarioId?.nombreUsuario ?? "Operador"}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(c.createdAt).toLocaleDateString("es-AR", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">{c.mensaje}</p>
+                </div>
+              ))}
+            </div>
+            <hr className="mb-4" />
+          </>
+        )}
+
         {/* Acciones — solo si no está resuelto ni rechazado */}
         {reporte.estado !== "resolved" && reporte.estado !== "rejected" && (
           <>
-            {/* Poner en progreso */}
             {reporte.estado === "validated" && (
               <>
                 <p className="text-xs text-gray-400 font-medium mb-2">Cambiar estado</p>
@@ -176,7 +215,6 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
               </>
             )}
 
-            {/* Comentar */}
             <p className="text-xs text-gray-400 font-medium mb-2">Comentar</p>
             <div className="flex gap-2 mb-4">
               <input
@@ -196,7 +234,6 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
               </button>
             </div>
 
-            {/* Rechazar */}
             <button
               onClick={() => handleCambiarEstado("rejected")}
               disabled={loadingEstado}
@@ -205,7 +242,6 @@ export default function OperadorReporteDetail({ reporte, onClose, onActualizar }
               {loadingEstado ? "..." : "Rechazar reporte"}
             </button>
 
-            {/* Resolver — solo si está en progreso */}
             {reporte.estado === "in_progress" && (
               <button
                 onClick={handleResolver}

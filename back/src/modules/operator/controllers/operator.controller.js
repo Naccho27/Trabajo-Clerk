@@ -3,8 +3,8 @@ import {
   addProgressService,
   getReportByIdService,
   getValidatedReportsService,
-  getInProgressReportsService, // 👈 nuevo
-  getResolvedReportsService,   // 👈 nuevo
+  getInProgressReportsService,
+  getResolvedReportsService,
   resolveReportService,
   updateReportStatusService,
 } from "../services/operator.service.js";
@@ -18,7 +18,6 @@ export const getValidatedReports = async (req, res, next) => {
   }
 };
 
-// 👈 nuevo
 export const getInProgressReports = async (req, res, next) => {
   try {
     const reportes = await getInProgressReportsService();
@@ -28,7 +27,6 @@ export const getInProgressReports = async (req, res, next) => {
   }
 };
 
-// 👈 nuevo
 export const getResolvedReports = async (req, res, next) => {
   try {
     const reportes = await getResolvedReportsService();
@@ -49,11 +47,8 @@ export const getReportById = async (req, res, next) => {
 
 export const updateReportStatus = async (req, res, next) => {
   try {
-    const reporte = await updateReportStatusService(
-      req.params.id,
-      req.body.status,
-      "6a0a4f45d82a7c52ac02c2db"
-    );
+    const mongoId = req.user._id;
+    const reporte = await updateReportStatusService(req.params.id, req.body.status, mongoId);
     res.status(200).json({ ok: true, reporte });
   } catch (error) {
     next(error);
@@ -62,11 +57,8 @@ export const updateReportStatus = async (req, res, next) => {
 
 export const addProgress = async (req, res, next) => {
   try {
-    const reporte = await addProgressService(
-      req.params.id,
-      req.body.descripcion,
-      "6a0a4f45d82a7c52ac02c2db"
-    );
+    const mongoId = req.user._id;
+    const reporte = await addProgressService(req.params.id, req.body.descripcion, mongoId);
     res.status(200).json({ ok: true, reporte });
   } catch (error) {
     next(error);
@@ -75,11 +67,8 @@ export const addProgress = async (req, res, next) => {
 
 export const addComment = async (req, res, next) => {
   try {
-    const comentario = await addCommentService(
-      req.params.id,
-      req.body.texto,
-      "6a0a4f45d82a7c52ac02c2db"
-    );
+    const mongoId = req.user._id;
+    const comentario = await addCommentService(req.params.id, req.body.texto, mongoId);
     res.status(200).json({ ok: true, comentario });
   } catch (error) {
     next(error);
@@ -88,10 +77,8 @@ export const addComment = async (req, res, next) => {
 
 export const resolveReport = async (req, res, next) => {
   try {
-    const reporte = await resolveReportService(
-      req.params.id,
-      "6a0a4f45d82a7c52ac02c2db"
-    );
+    const mongoId = req.user._id;
+    const reporte = await resolveReportService(req.params.id, mongoId);
     res.status(200).json({ ok: true, reporte });
   } catch (error) {
     next(error);
