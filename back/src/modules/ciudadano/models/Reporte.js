@@ -152,7 +152,6 @@ const reporteSchema = new mongoose.Schema(
 
       enum: [
         "open",
-        "validated",
         "in_progress",
         "resolved",
         "rejected",
