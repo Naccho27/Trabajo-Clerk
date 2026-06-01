@@ -9,6 +9,7 @@ import FilterBar from "../components/Filters/FilterBar";
 import Navbar from "../components/Navbar/Navbar";
 import NavbarPublic from "../components/Navbar/NavbarPublic";
 import OperadorPage from "../pages/OperadorPage.jsx";
+import SupervisorPage from "../pages/SupervisorPage"; // 👈 de Alan
 
 function MapPage() {
   const [filtro, setFiltro] = useState("todos");
@@ -81,8 +82,16 @@ export default function AppRouter() {
       />
       <Route path="/mapa-publico" element={<MapPagePublic />} />
       <Route path="/operador" element={<SignedIn><OperadorPage /></SignedIn>} />
-      <Route path="/supervisor" element={<SignedIn><div>Supervisor</div></SignedIn>} />
-      <Route path="/admin"      element={<SignedIn><div>Admin</div></SignedIn>} />
+      <Route
+        path="/supervisor"
+        element={
+          <>
+            <SignedIn><SupervisorPage /></SignedIn>  {/* 👈 de Alan */}
+            <SignedOut><Navigate to="/login" /></SignedOut>
+          </>
+        }
+      />
+      <Route path="/admin" element={<SignedIn><div>Admin</div></SignedIn>} />
     </Routes>
   );
 }
