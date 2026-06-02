@@ -4,7 +4,7 @@ import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
 
 const API_URL = import.meta.env.VITE_API_URL;
-const MAX_IMAGENES = 6;
+const MAX_IMAGENES = 3;
 
 const categorias = [
   { id: "baches", label: "Bache", icon: icons.baches },

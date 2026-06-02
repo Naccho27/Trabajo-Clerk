@@ -33,7 +33,7 @@ export default function Navbar({ onCrearReporte }) {
 
           <button
             onClick={onCrearReporte}
-            className="rounded-full w-14 h-14 flex items-center justify-center shadow-lg -mt-6"
+            className="rounded-full w-14 h-14 flex items-center flex justify-center shadow-lg -mt-6"
             style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
           >
             <span className="text-white text-4xl leading-none mb-1">+</span>

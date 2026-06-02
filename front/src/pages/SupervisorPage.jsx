@@ -15,10 +15,10 @@ const CATEGORIAS = ["baches", "inundacion", "alumbrado", "semaforo", "residuos"]
 const PRIORIDADES = ["low", "medium", "high", "critical"];
 
 const PRIORIDAD_BADGE = {
-  low:      { bg: "bg-gray-100",   text: "text-gray-600",   label: "Baja" },
-  medium:   { bg: "bg-blue-100",   text: "text-blue-800",   label: "Media" },
-  high:     { bg: "bg-amber-100",  text: "text-amber-800",  label: "Alta" },
-  critical: { bg: "bg-red-100",    text: "text-red-700",    label: "Crítica" },
+  low: { bg: "bg-gray-100", text: "text-gray-600", label: "Baja" },
+  medium: { bg: "bg-blue-100", text: "text-blue-800", label: "Media" },
+  high: { bg: "bg-amber-100", text: "text-amber-800", label: "Alta" },
+  critical: { bg: "bg-red-100", text: "text-red-700", label: "Crítica" },
 };
 
 export default function SupervisorPage() {
@@ -38,7 +38,7 @@ export default function SupervisorPage() {
     try {
       const token = await getToken({ template: "backend" });
       const response = await axios.post(
-        "http://localhost:3000/api/auth/sync",
+        `${import.meta.env.VITE_API_URL}/auth/sync`,
         {
           clerkId: user?.id,
           nombreUsuario: user?.username || user?.firstName || "Usuario",
@@ -72,7 +72,7 @@ export default function SupervisorPage() {
       setDetalle(data.reporte);
       setMostrarCategorias(false);
       setMostrarPrioridades(false);
-      setMostrarPerfil(false); 
+      setMostrarPerfil(false);
     } catch (error) {
       console.log("Error cargando detalle:", error);
     }
@@ -158,26 +158,26 @@ export default function SupervisorPage() {
                     )}
                   </div>
                 </div>
-             <div className="relative">
-  <img
-    src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/40"}
-    className="w-10 h-10 rounded-full object-cover cursor-pointer"
-    alt="perfil"
-    onClick={() => setMostrarPerfil(!mostrarPerfil)}
-  />
+                <div className="relative">
+                  <img
+                    src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/40"}
+                    className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                    alt="perfil"
+                    onClick={() => setMostrarPerfil(!mostrarPerfil)}
+                  />
 
-  {mostrarPerfil && (
-    <div className="absolute top-12 right-0 z-10 bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2 w-48">
-      <img
-        src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/60"}
-        className="w-16 h-16 rounded-full object-cover"
-        alt="perfil"
-      />
-      <p className="font-semibold text-sm text-gray-800">{detalle.usuarioId?.nombreUsuario || "Usuario"}</p>
-      <p className="text-xs text-gray-400">{detalle.usuarioId?.email || ""}</p>
-    </div>
-  )}
-</div>
+                  {mostrarPerfil && (
+                    <div className="absolute top-12 right-0 z-10 bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2 w-48">
+                      <img
+                        src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/60"}
+                        className="w-16 h-16 rounded-full object-cover"
+                        alt="perfil"
+                      />
+                      <p className="font-semibold text-sm text-gray-800">{detalle.usuarioId?.nombreUsuario || "Usuario"}</p>
+                      <p className="text-xs text-gray-400">{detalle.usuarioId?.email || ""}</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Botones cambiar categoria/prioridad */}
@@ -297,21 +297,21 @@ export default function SupervisorPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {reportesFiltrados.map((reporte) => (
-  <div
-    key={reporte._id}
-    onClick={() => verDetalle(reporte)}
-    className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors">
-    <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />
-    <div className="flex-1">
-      <p className="text-sm font-medium text-gray-800">{reporte.titulo}</p>
-      <p className="text-xs text-gray-400 capitalize">{reporte.categoria} · {reporte.prioridad}</p>
-      <p className="text-xs text-gray-400">
-        {reporte.ubicacion?.direccion || `${reporte.ubicacion?.lat?.toFixed(4)}, ${reporte.ubicacion?.lng?.toFixed(4)}`}
-      </p>
-    </div>
-    <span className="text-gray-300 text-sm">→</span>
-  </div>
-))}
+                  <div
+                    key={reporte._id}
+                    onClick={() => verDetalle(reporte)}
+                    className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800">{reporte.titulo}</p>
+                      <p className="text-xs text-gray-400 capitalize">{reporte.categoria} · {reporte.prioridad}</p>
+                      <p className="text-xs text-gray-400">
+                        {reporte.ubicacion?.direccion || `${reporte.ubicacion?.lat?.toFixed(4)}, ${reporte.ubicacion?.lng?.toFixed(4)}`}
+                      </p>
+                    </div>
+                    <span className="text-gray-300 text-sm">→</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
