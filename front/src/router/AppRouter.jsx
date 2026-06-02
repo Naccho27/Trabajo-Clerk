@@ -9,7 +9,8 @@ import FilterBar from "../components/Filters/FilterBar";
 import Navbar from "../components/Navbar/Navbar";
 import NavbarPublic from "../components/Navbar/NavbarPublic";
 import OperadorPage from "../pages/OperadorPage.jsx";
-import SupervisorPage from "../pages/SupervisorPage"; // 👈 de Alan
+import SupervisorPage from "../pages/SupervisorPage";
+import AdminPage from "../pages/AdminPage"; // 👈 de Alan
 
 function MapPage() {
   const [filtro, setFiltro] = useState("todos");
@@ -86,12 +87,20 @@ export default function AppRouter() {
         path="/supervisor"
         element={
           <>
-            <SignedIn><SupervisorPage /></SignedIn>  {/* 👈 de Alan */}
+            <SignedIn><SupervisorPage /></SignedIn>
             <SignedOut><Navigate to="/login" /></SignedOut>
           </>
         }
       />
-      <Route path="/admin" element={<SignedIn><div>Admin</div></SignedIn>} />
+      <Route
+        path="/admin"
+        element={
+          <>
+            <SignedIn><AdminPage /></SignedIn>
+            <SignedOut><Navigate to="/login" /></SignedOut>
+          </>
+        }
+      />
     </Routes>
   );
 }

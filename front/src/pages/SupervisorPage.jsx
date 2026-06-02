@@ -30,8 +30,28 @@ export default function SupervisorPage() {
   const [mostrarPrioridades, setMostrarPrioridades] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
+  const [esAdmin, setEsAdmin] = useState(false);
 
   useEffect(() => { cargarReportes(); }, []);
+
+  const verificarRol = async () => {
+    try {
+      const token = await getToken({ template: "backend" });
+      const response = await axios.post(
+        "http://localhost:3000/api/auth/sync",
+        {
+          clerkId: user?.id,
+          nombreUsuario: user?.username || user?.firstName || "Usuario",
+          email: user?.primaryEmailAddress?.emailAddress || "sin-email@example.com",
+          imagenPerfil: user?.imageUrl,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEsAdmin(response.data.usuario.rol === "admin");
+    } catch (error) {
+      console.log("Error verificando rol:", error);
+    }
+  };
 
   const cargarReportes = async () => {
     try {

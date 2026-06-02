@@ -4,22 +4,13 @@ import { EyeIcon, EyeOffIcon } from "./EyeIcons";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginCard() {
-  /*
-  |------------------------------------------------------------------
-  | CLERK
-  |------------------------------------------------------------------
-  */
-
   const { signIn, setActive, isLoaded: signInLoaded } = useSignIn();
   const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const { signOut } = useClerk();
   const navigate = useNavigate();
 
-  /*
-  |------------------------------------------------------------------
-  | STATES
-  |------------------------------------------------------------------
-  */
+  // Detectar si fue redirigido por bloqueo
+  const bloqueado = new URLSearchParams(window.location.search).get("bloqueado");
 
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
@@ -32,12 +23,6 @@ export default function LoginCard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /*
-  |------------------------------------------------------------------
-  | CONTINUAR EMAIL
-  |------------------------------------------------------------------
-  */
-
   const handleContinueEmail = (e) => {
     e.preventDefault();
     if (!email) return setError("Ingresá tu email o nombre de usuario");
@@ -45,12 +30,6 @@ export default function LoginCard() {
     setPassword("");
     setStep("password");
   };
-
-  /*
-  |------------------------------------------------------------------
-  | LOGIN
-  |------------------------------------------------------------------
-  */
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -72,12 +51,6 @@ export default function LoginCard() {
     }
   };
 
-  /*
-  |------------------------------------------------------------------
-  | GOOGLE LOGIN
-  |------------------------------------------------------------------
-  */
-
   const handleGoogle = async () => {
     if (!signInLoaded) return;
     await signIn.authenticateWithRedirect({
@@ -86,12 +59,6 @@ export default function LoginCard() {
       redirectUrlComplete: "/", // 👈 cambiado de /mapa a /
     });
   };
-
-  /*
-  |------------------------------------------------------------------
-  | REGISTER
-  |------------------------------------------------------------------
-  */
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -109,7 +76,6 @@ export default function LoginCard() {
 
     setLoading(true);
     setError("");
-
     try {
       /*
       |--------------------------------------------------
@@ -119,13 +85,6 @@ export default function LoginCard() {
 
       const result = await signUp.create({ username, emailAddress: email, password });
       console.log("SIGNUP CREADO:", result);
-
-      /*
-      |--------------------------------------------------
-      | Si Clerk ya completó el signup
-      |--------------------------------------------------
-      */
-
       if (result.status === "complete") {
         await signOut();
         alert("Cuenta creada correctamente. Ahora iniciá sesión.");
@@ -222,38 +181,31 @@ export default function LoginCard() {
           <span className="bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">Log</span>
         </h1>
 
-        {/* ===================================================== */}
-        {/* EMAIL */}
-        {/* ===================================================== */}
+        {/* MENSAJE BLOQUEADO */}
+        {bloqueado && (
+          <div className="bg-red-50 border border-red-300 rounded-xl p-3 mb-2">
+            <p className="text-red-500 text-sm text-center">
+              Tu cuenta fue bloqueada. Contactá al administrador.
+            </p>
+          </div>
+        )}
 
+        {/* EMAIL */}
         {step === "email" && (
           <form onSubmit={handleContinueEmail} className="flex flex-col gap-4">
             <p className="text-center text-gray-500 text-sm">
               Por favor loguearse para continuar
             </p>
-
-            <button
-              type="button"
-              onClick={handleGoogle}
-              className="flex items-center justify-center gap-3 border border-gray-700 rounded-full py-2 px-4 text-gray-800 font-medium hover:bg-gray-100 transition-colors"
-            >
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                alt="Google"
-                className="w-5 h-5"
-              />
+            <button type="button" onClick={handleGoogle}
+              className="flex items-center justify-center gap-3 border border-gray-700 rounded-full py-2 px-4 text-gray-800 font-medium hover:bg-gray-100 transition-colors">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
               Continuar con Google
             </button>
-
             <div className="flex items-center gap-2 text-gray-400 text-sm">
               <hr className="flex-1 border-gray-300" />O
               <hr className="flex-1 border-gray-300" />
             </div>
-
-            <input
-              type="text"
-              placeholder="Email o nombre de usuario"
-              value={email}
+            <input type="text" placeholder="Email o nombre de usuario" value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70"
             />
@@ -285,10 +237,7 @@ export default function LoginCard() {
           </form>
         )}
 
-        {/* ===================================================== */}
         {/* PASSWORD */}
-        {/* ===================================================== */}
-
         {step === "password" && (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <p className="text-center text-gray-500 text-sm">
@@ -302,7 +251,6 @@ export default function LoginCard() {
             >
               Cambiar método
             </button>
-
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -332,32 +280,18 @@ export default function LoginCard() {
           </form>
         )}
 
-        {/* ===================================================== */}
         {/* REGISTER */}
-        {/* ===================================================== */}
-
         {step === "register" && (
           <form onSubmit={handleRegister} className="flex flex-col gap-4">
             <p className="text-center text-gray-500 text-sm">
               Creá tu cuenta para continuar
             </p>
-
-            <input
-              type="text"
-              placeholder="Nombre de usuario"
-              value={username}
+            <input type="text" placeholder="Nombre de usuario" value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70"
-            />
-
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
+              className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70" />
+            <input type="email" placeholder="Email" value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70"
-            />
-
+              className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70" />
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -374,7 +308,6 @@ export default function LoginCard() {
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
-
             <div className="relative">
               <input
                 type={showConfirm ? "text" : "password"}
@@ -395,12 +328,8 @@ export default function LoginCard() {
             {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
             <div id="clerk-captcha"></div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-full py-2 transition-colors disabled:opacity-60"
-            >
+            <button type="submit" disabled={loading}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-full py-2 transition-colors disabled:opacity-60">
               {loading ? "Cargando..." : "Registrarse"}
             </button>
 
@@ -414,20 +343,13 @@ export default function LoginCard() {
           </form>
         )}
 
-        {/* ===================================================== */}
         {/* VERIFY */}
-        {/* ===================================================== */}
-
         {step === "verify" && (
           <form onSubmit={handleVerify} className="flex flex-col gap-4">
             <p className="text-center text-gray-500 text-sm">
               Te enviamos un código a tu email
             </p>
-
-            <input
-              type="text"
-              placeholder="Código"
-              value={code}
+            <input type="text" placeholder="Código" value={code}
               onChange={(e) => setCode(e.target.value)}
               className="border border-gray-400 rounded-full py-2 px-4 text-sm outline-none focus:border-blue-500 bg-white/70 text-center"
             />
