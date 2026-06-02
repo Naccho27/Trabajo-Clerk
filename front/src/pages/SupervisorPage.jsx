@@ -1,35 +1,37 @@
 import { useState, useEffect } from "react";
-import { useAuth, useClerk } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
-import { obtenerReportesPendientes, aprobarReporte, rechazarReporte, cambiarCategoria, cambiarPrioridad, obtenerDetalleReporte } from "../services/supervisorService";
+import { useAuth } from "@clerk/clerk-react";
+import Header from "../components/Navbar/Header";
+import { icons } from "../assets/icons/icons.js";
+import {
+  obtenerReportesPendientes,
+  aprobarReporte,
+  rechazarReporte,
+  cambiarCategoria,
+  cambiarPrioridad,
+  obtenerDetalleReporte,
+} from "../services/supervisorService";
 
 const CATEGORIAS = ["baches", "inundacion", "alumbrado", "semaforo", "residuos"];
 const PRIORIDADES = ["low", "medium", "high", "critical"];
 
-const ICONOS = {
-  baches: "⚠️",
-  inundacion: "🌊",
-  alumbrado: "💡",
-  semaforo: "🚦",
-  residuos: "🗑️",
-  todos: "📍",
+const PRIORIDAD_BADGE = {
+  low:      { bg: "bg-gray-100",   text: "text-gray-600",   label: "Baja" },
+  medium:   { bg: "bg-blue-100",   text: "text-blue-800",   label: "Media" },
+  high:     { bg: "bg-amber-100",  text: "text-amber-800",  label: "Alta" },
+  critical: { bg: "bg-red-100",    text: "text-red-700",    label: "Crítica" },
 };
 
 export default function SupervisorPage() {
+  const [mostrarPerfil, setMostrarPerfil] = useState(false);
   const { getToken } = useAuth();
-  const { signOut } = useClerk();
-  const navigate = useNavigate();
   const [reportes, setReportes] = useState([]);
   const [detalle, setDetalle] = useState(null);
   const [mostrarCategorias, setMostrarCategorias] = useState(false);
   const [mostrarPrioridades, setMostrarPrioridades] = useState(false);
-  const [mostrarPerfil, setMostrarPerfil] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    cargarReportes();
-  }, []);
+  useEffect(() => { cargarReportes(); }, []);
 
   const cargarReportes = async () => {
     try {
@@ -50,7 +52,7 @@ export default function SupervisorPage() {
       setDetalle(data.reporte);
       setMostrarCategorias(false);
       setMostrarPrioridades(false);
-      setMostrarPerfil(false);
+      setMostrarPerfil(false); 
     } catch (error) {
       console.log("Error cargando detalle:", error);
     }
@@ -105,153 +107,129 @@ export default function SupervisorPage() {
     r.categoria?.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const Header = ({ mostrarVolver = false }) => (
-    <div className="bg-white px-6 py-3 flex items-center justify-between shadow">
-      <div className="flex items-center gap-3">
-        {/* FLECHA VOLVER */}
-        {mostrarVolver && (
-          <button
-            onClick={() => setDetalle(null)}
-            className="text-gray-500 hover:text-blue-500 transition-colors text-xl">
-            ←
-          </button>
-        )}
-        <h1 className="text-xl font-bold">Urban<span className="text-blue-500">Log</span></h1>
-      </div>
-      <div className="flex items-center gap-4">
-        {/* BOTON IR AL MAPA */}
-        <button
-          onClick={() => navigate("/mapa")}
-          className="text-sm text-blue-500 hover:text-blue-700 font-medium transition-colors">
-          🗺️ Ver mapa
-        </button>
-        {/* CERRAR SESION */}
-        <button
-          onClick={() => signOut(() => window.location.href = "/login")}
-          className="text-sm text-gray-600 flex items-center gap-1 hover:text-red-500 transition-colors">
-          Cerrar Sesion 🔓
-        </button>
-      </div>
-    </div>
-  );
-
   // VISTA DETALLE
   if (detalle) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
-        <Header mostrarVolver={true} />
+      <div className="w-screen h-screen flex flex-col bg-gray-50">
+        <Header />
+        <div className="flex-1 flex justify-center overflow-hidden">
+          <div className="w-full max-w-md flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto pt-16 px-4 pb-6 flex flex-col gap-4">
 
-        {/* CONTENIDO */}
-        <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
+              {/* Botón volver */}
+              <button
+                onClick={() => setDetalle(null)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mt-2"
+              >
+                ← Volver
+              </button>
 
-          {/* INFO REPORTE */}
-          <div className="bg-white rounded-xl shadow p-4 flex items-center gap-3 relative">
-            <span className="text-3xl">{ICONOS[detalle.categoria] || "📍"}</span>
-            <div className="flex-1 text-sm">
-              <p className="font-semibold">{detalle.titulo || detalle.direccion || "Sin título"}</p>
-              <p className="text-gray-500">
-                Altitud: {detalle.ubicacion?.lat?.toFixed(4) || "x"} | Longitud: {detalle.ubicacion?.lng?.toFixed(4) || "x"}
-              </p>
-              <p className="text-gray-500">{detalle.categoria} | Prioridad: {detalle.prioridad || "x"}</p>
+              {/* Info reporte */}
+              <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
+                <img src={icons[detalle.categoria]} className="w-10 h-10" alt={detalle.categoria} />
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800">{detalle.titulo}</p>
+                  <p className="text-xs text-gray-400 capitalize">{detalle.categoria}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {PRIORIDAD_BADGE[detalle.prioridad] && (
+                      <span className={`${PRIORIDAD_BADGE[detalle.prioridad].bg} ${PRIORIDAD_BADGE[detalle.prioridad].text} text-xs px-2 py-0.5 rounded-full`}>
+                        {PRIORIDAD_BADGE[detalle.prioridad].label}
+                      </span>
+                    )}
+                  </div>
+                </div>
+             <div className="relative">
+  <img
+    src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/40"}
+    className="w-10 h-10 rounded-full object-cover cursor-pointer"
+    alt="perfil"
+    onClick={() => setMostrarPerfil(!mostrarPerfil)}
+  />
+
+  {mostrarPerfil && (
+    <div className="absolute top-12 right-0 z-10 bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2 w-48">
+      <img
+        src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/60"}
+        className="w-16 h-16 rounded-full object-cover"
+        alt="perfil"
+      />
+      <p className="font-semibold text-sm text-gray-800">{detalle.usuarioId?.nombreUsuario || "Usuario"}</p>
+      <p className="text-xs text-gray-400">{detalle.usuarioId?.email || ""}</p>
+    </div>
+  )}
+</div>
+              </div>
+
+              {/* Botones cambiar categoria/prioridad */}
+              <div className="flex gap-2 relative">
+                <button
+                  onClick={() => { setMostrarPrioridades(false); setMostrarCategorias(!mostrarCategorias); }}
+                  className="flex-1 border border-gray-200 rounded-full py-2 text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  Cambiar categoría
+                </button>
+                <button
+                  onClick={() => { setMostrarCategorias(false); setMostrarPrioridades(!mostrarPrioridades); }}
+                  className="flex-1 border border-gray-200 rounded-full py-2 text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  Cambiar prioridad
+                </button>
+
+                {mostrarCategorias && (
+                  <div className="absolute top-12 left-0 z-10 bg-white rounded-2xl shadow-lg p-3 grid grid-cols-3 gap-2 w-64">
+                    {CATEGORIAS.map((cat) => (
+                      <button key={cat} onClick={() => handleCambiarCategoria(cat)}
+                        className="flex flex-col items-center gap-1 p-2 hover:bg-gray-50 rounded-xl">
+                        <img src={icons[cat]} className="w-8 h-8" alt={cat} />
+                        <span className="text-xs capitalize text-gray-600">{cat}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {mostrarPrioridades && (
+                  <div className="absolute top-12 right-0 z-10 bg-white rounded-2xl shadow-lg p-3 grid grid-cols-2 gap-2 w-48">
+                    {PRIORIDADES.map((p) => (
+                      <button key={p} onClick={() => handleCambiarPrioridad(p)}
+                        className="border border-gray-200 rounded-xl py-2 px-3 text-xs capitalize hover:bg-gray-50 text-gray-600">
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Descripción */}
+              <div className="bg-white rounded-2xl shadow-sm p-4">
+                <p className="text-xs text-gray-400 font-medium mb-2">Descripción</p>
+                <p className="text-sm text-gray-700 leading-relaxed mb-4">{detalle.descripcion}</p>
+
+                {detalle.imagenes?.length > 0 && (
+                  <>
+                    <p className="text-xs text-gray-400 font-medium mb-2">Fotos</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {detalle.imagenes.map((img, i) => (
+                        <img key={i} src={img} alt={`imagen-${i}`}
+                          className="w-full h-28 object-cover rounded-xl border border-gray-100" />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Botones aceptar/rechazar */}
+              <div className="flex gap-3">
+                <button onClick={handleRechazar}
+                  className="flex-1 py-3 rounded-full text-white text-sm font-semibold bg-red-500 hover:bg-red-600 transition-colors">
+                  Rechazar
+                </button>
+                <button onClick={handleAprobar}
+                  className="flex-1 py-3 rounded-full text-white text-sm font-semibold bg-green-500 hover:bg-green-600 transition-colors">
+                  Aceptar
+                </button>
+              </div>
             </div>
-
-            {/* FOTO PERFIL */}
-            <img
-              src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/40"}
-              alt="perfil"
-              className="w-10 h-10 rounded-full object-cover cursor-pointer"
-              onClick={() => {
-                setMostrarCategorias(false);
-                setMostrarPrioridades(false);
-                setMostrarPerfil(!mostrarPerfil);
-              }}
-            />
-
-            {/* POPUP PERFIL */}
-            {mostrarPerfil && (
-              <div className="absolute top-14 right-4 z-10 bg-white rounded-xl shadow-lg p-4 flex flex-col items-center gap-2 w-48">
-                <img
-                  src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/60"}
-                  alt="perfil"
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-                <p className="font-semibold text-sm">{detalle.usuarioId?.nombreUsuario || "Usuario"}</p>
-                <p className="text-xs text-gray-400">{detalle.usuarioId?.email || ""}</p>
-              </div>
-            )}
           </div>
-
-          {/* BOTONES CAMBIAR CATEGORIA Y PRIORIDAD */}
-          <div className="flex gap-2 relative">
-            <button
-              onClick={() => { setMostrarPrioridades(false); setMostrarPerfil(false); setMostrarCategorias(!mostrarCategorias); }}
-              className="flex-1 border border-gray-300 rounded-full py-2 text-sm text-gray-600 hover:bg-gray-100 transition-colors">
-              Cambiar categoría
-            </button>
-            <button
-              onClick={() => { setMostrarCategorias(false); setMostrarPerfil(false); setMostrarPrioridades(!mostrarPrioridades); }}
-              className="flex-1 border border-gray-300 rounded-full py-2 text-sm text-gray-600 hover:bg-gray-100 transition-colors">
-              Cambiar prioridad
-            </button>
-
-            {/* POPUP CATEGORIAS */}
-            {mostrarCategorias && (
-              <div className="absolute top-12 left-0 z-10 bg-white rounded-xl shadow-lg p-3 grid grid-cols-2 gap-3 w-56">
-                {CATEGORIAS.map((cat) => (
-                  <button key={cat} onClick={() => handleCambiarCategoria(cat)}
-                    className="flex flex-col items-center gap-1 p-2 hover:bg-gray-100 rounded-lg">
-                    <span className="text-2xl">{ICONOS[cat]}</span>
-                    <span className="text-xs capitalize">{cat}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* POPUP PRIORIDADES */}
-            {mostrarPrioridades && (
-              <div className="absolute top-12 right-0 z-10 bg-white rounded-xl shadow-lg p-3 grid grid-cols-2 gap-2 w-48">
-                {PRIORIDADES.map((p) => (
-                  <button key={p} onClick={() => handleCambiarPrioridad(p)}
-                    className="border border-gray-300 rounded-lg py-2 px-3 text-sm capitalize hover:bg-gray-100">
-                    {p.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* DESCRIPCION */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-2xl font-light text-center mb-3">Descripcion</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {detalle.imagenes?.length > 0 ? (
-                detalle.imagenes.map((img, i) => (
-                  <img key={i} src={img} alt={`imagen-${i}`}
-                    className="w-full rounded-lg object-cover max-h-48" />
-                ))
-              ) : (
-                <p className="text-center text-gray-400 text-sm col-span-2">Sin imágenes</p>
-              )}
-            </div>
-          </div>
-
-          {/* BOTONES ACEPTAR/RECHAZAR */}
-          <div className="flex gap-3">
-            <button onClick={handleRechazar}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-full transition-colors">
-              RECHAZAR
-            </button>
-            <button onClick={handleAprobar}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-full transition-colors">
-              ACEPTAR
-            </button>
-          </div>
-        </div>
-
-        {/* NAVBAR */}
-        <div className="border-t bg-white flex justify-around py-3">
-          <button onClick={() => setDetalle(null)} className="text-2xl">🕐</button>
-          <button className="text-2xl">👤</button>
         </div>
       </div>
     );
@@ -259,59 +237,65 @@ export default function SupervisorPage() {
 
   // VISTA LISTA
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header mostrarVolver={false} />
+    <div className="w-screen h-screen flex flex-col bg-gray-50">
+      <Header />
+      <div className="flex-1 flex justify-center overflow-hidden">
+        <div className="w-full max-w-md flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto pt-16 px-4 pb-6">
 
-      {/* BUSCADOR */}
-      <div className="px-6 py-2 bg-white border-b">
-        <div className="flex items-center gap-2 border border-gray-300 rounded-full px-3 py-1">
-          <span className="text-gray-400">🔍</span>
-          <input
-            type="text"
-            placeholder="Buscar Registro..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="outline-none text-sm w-full"
-          />
-        </div>
-      </div>
-
-      {/* TITULO */}
-      <div className="flex justify-center my-3">
-        <span className="border border-pink-400 text-pink-500 rounded-full px-4 py-1 text-sm">
-          Incidentes a Revision
-        </span>
-      </div>
-
-      {/* LISTA */}
-      <div className="w-full max-w-2xl mx-auto flex flex-col gap-2 px-4 pb-20">
-        {loading ? (
-          <p className="text-center text-gray-400 mt-10">Cargando reportes...</p>
-        ) : reportesFiltrados.length === 0 ? (
-          <p className="text-center text-gray-400 mt-10">No hay reportes pendientes</p>
-        ) : (
-          reportesFiltrados.map((reporte) => (
-            <div key={reporte._id}
-              className="bg-white rounded-xl shadow px-4 py-3 flex items-center gap-3">
-              <span className="text-3xl">{ICONOS[reporte.categoria] || "📍"}</span>
-              <div className="flex-1 text-sm">
-                <p className="font-medium">{reporte.titulo || reporte.direccion || "Sin título"}</p>
-                <p className="text-gray-400">
-                  Altitud: {reporte.ubicacion?.lat?.toFixed(4) || "x"} | Longitud: {reporte.ubicacion?.lng?.toFixed(4) || "x"}
-                </p>
-                <p className="text-gray-400">Tipo: {reporte.categoria || "x"} &nbsp; Prioridad: {reporte.prioridad || "x"}</p>
-              </div>
-              <button onClick={() => verDetalle(reporte)}
-                className="text-xl text-gray-400 hover:text-blue-500">➡️</button>
+            {/* Buscador */}
+            <div className="flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 bg-white my-4">
+              <span className="text-gray-400 text-sm">🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar reporte..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="outline-none text-sm w-full bg-transparent"
+              />
             </div>
-          ))
-        )}
-      </div>
 
-      {/* NAVBAR */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-white flex justify-around py-3">
-        <button className="text-2xl">🕐</button>
-        <button className="text-2xl">👤</button>
+            {/* Título */}
+            <div className="flex items-center justify-center mb-4">
+              <span
+                className="text-sm font-semibold px-5 py-1.5 rounded-full text-white"
+                style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+              >
+                Incidentes a Revisión
+              </span>
+            </div>
+
+            {/* Lista */}
+            {loading ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-sm text-gray-400">Cargando incidentes...</p>
+              </div>
+            ) : reportesFiltrados.length === 0 ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-sm text-gray-400">No hay incidentes pendientes</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {reportesFiltrados.map((reporte) => (
+  <div
+    key={reporte._id}
+    onClick={() => verDetalle(reporte)}
+    className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors">
+    <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />
+    <div className="flex-1">
+      <p className="text-sm font-medium text-gray-800">{reporte.titulo}</p>
+      <p className="text-xs text-gray-400 capitalize">{reporte.categoria} · {reporte.prioridad}</p>
+      <p className="text-xs text-gray-400">
+        {reporte.ubicacion?.direccion || `${reporte.ubicacion?.lat?.toFixed(4)}, ${reporte.ubicacion?.lng?.toFixed(4)}`}
+      </p>
+    </div>
+    <span className="text-gray-300 text-sm">→</span>
+  </div>
+))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

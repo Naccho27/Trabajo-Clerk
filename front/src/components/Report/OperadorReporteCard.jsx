@@ -39,6 +39,11 @@ export default function OperadorReporteCard({ reporte, onClick }) {
             <span className={`text-xs font-medium ${prioridadColor}`}>
               {reporte.prioridad}
             </span>
+              {(reporte.estado === "resolved" || reporte.estado === "rejected") && (
+    <span className="text-xs text-gray-400">
+      {new Date(reporte.fechaResolucion || reporte.updatedAt).toLocaleDateString("es-AR")}
+    </span>
+  )}
           </div>
         </div>
       </div>
