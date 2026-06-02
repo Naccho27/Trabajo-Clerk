@@ -75,3 +75,16 @@ export const sincronizarUsuario =
       });
     }
   };
+
+  export const obtenerUsuarioActual = async (req, res) => {
+  try {
+    const auth = req.auth();
+    const usuario = await Usuario.findOne({ clerkId: auth.userId });
+    if (!usuario) {
+      return res.status(404).json({ ok: false, mensaje: "Usuario no encontrado" });
+    }
+    res.json({ ok: true, usuario });
+  } catch (error) {
+    res.status(500).json({ ok: false, mensaje: error.message });
+  }
+};

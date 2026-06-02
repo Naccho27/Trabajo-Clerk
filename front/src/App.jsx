@@ -1,11 +1,13 @@
-import { useAuth, useUser } from "@clerk/clerk-react";
-import { useEffect } from "react";
+import { useAuth, useUser, useClerk } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import AppRouter from "./router/AppRouter";
 
 function App() {
   const { getToken } = useAuth();
   const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  const [syncListo, setSyncListo] = useState(false);
 
   useEffect(() => {
     const sincronizarUsuario = async () => {
@@ -19,6 +21,7 @@ function App() {
 
         if (!isSignedIn || !user) {
           console.log("NO HAY USER");
+          setSyncListo(true);
           return;
         }
 
@@ -49,17 +52,28 @@ function App() {
         console.log("RESPUESTA BACK:", response.data);
         console.log("ROL OBTENIDO:", response.data.usuario.rol);
 
+        // VERIFICAR SI ESTÁ BLOQUEADO
+        if (response.data.usuario.activo === false) {
+          console.log("USUARIO BLOQUEADO");
+          await signOut();
+          window.location.href = "/login?bloqueado=true";
+          return;
+        }
+
+        setSyncListo(true);
+
       } catch (error) {
         console.log("ERROR SYNC:");
         console.log(error);
         console.log(error.response?.data);
+        setSyncListo(true);
       }
     };
 
     sincronizarUsuario();
   }, [isLoaded, isSignedIn, user]);
 
-  if (!isLoaded) {
+  if (!isLoaded || !syncListo) {
     return (
       <div className="w-screen h-screen flex items-center justify-center">
         Cargando...

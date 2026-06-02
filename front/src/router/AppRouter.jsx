@@ -9,6 +9,7 @@ import FilterBar from "../components/Filters/FilterBar";
 import Navbar from "../components/Navbar/Navbar";
 import NavbarPublic from "../components/Navbar/NavbarPublic";
 import SupervisorPage from "../pages/SupervisorPage";
+import AdminPage from "../pages/AdminPage";
 
 function MapPage() {
   const [filtro, setFiltro] = useState("todos");
@@ -78,7 +79,11 @@ function RedirigirSegunRol() {
     );
   }
 
-  if (rol === "supervisor" || rol === "admin") return <Navigate to="/supervisor" />;
+  if (rol === "admin")
+  return <Navigate to="/admin" />;
+
+  if (rol === "supervisor")
+  return <Navigate to="/supervisor" />;
   return <Navigate to="/mapa" />;
 }
 
@@ -94,7 +99,9 @@ export default function AppRouter() {
           </>
         }
       />
+
       <Route path="/login" element={<LoginPage />} />
+
       <Route
         path="/mapa"
         element={
@@ -104,12 +111,24 @@ export default function AppRouter() {
           </>
         }
       />
+
       <Route path="/mapa-publico" element={<MapPagePublic />} />
+
       <Route
         path="/supervisor"
         element={
           <>
             <SignedIn><SupervisorPage /></SignedIn>
+            <SignedOut><Navigate to="/login" /></SignedOut>
+          </>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <>
+            <SignedIn><AdminPage /></SignedIn>
             <SignedOut><Navigate to="/login" /></SignedOut>
           </>
         }

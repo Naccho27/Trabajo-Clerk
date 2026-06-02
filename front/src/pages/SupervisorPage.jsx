@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useAuth, useClerk } from "@clerk/clerk-react";
+import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { obtenerReportesPendientes, aprobarReporte, rechazarReporte, cambiarCategoria, cambiarPrioridad, obtenerDetalleReporte } from "../services/supervisorService";
 
 const CATEGORIAS = ["baches", "inundacion", "alumbrado", "semaforo", "residuos"];
@@ -18,6 +19,7 @@ const ICONOS = {
 export default function SupervisorPage() {
   const { getToken } = useAuth();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const navigate = useNavigate();
   const [reportes, setReportes] = useState([]);
   const [detalle, setDetalle] = useState(null);
@@ -26,10 +28,31 @@ export default function SupervisorPage() {
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
+  const [esAdmin, setEsAdmin] = useState(false);
 
   useEffect(() => {
     cargarReportes();
+    verificarRol();
   }, []);
+
+  const verificarRol = async () => {
+    try {
+      const token = await getToken({ template: "backend" });
+      const response = await axios.post(
+        "http://localhost:3000/api/auth/sync",
+        {
+          clerkId: user?.id,
+          nombreUsuario: user?.username || user?.firstName || "Usuario",
+          email: user?.primaryEmailAddress?.emailAddress || "sin-email@example.com",
+          imagenPerfil: user?.imageUrl,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEsAdmin(response.data.usuario.rol === "admin");
+    } catch (error) {
+      console.log("Error verificando rol:", error);
+    }
+  };
 
   const cargarReportes = async () => {
     try {
@@ -108,7 +131,6 @@ export default function SupervisorPage() {
   const Header = ({ mostrarVolver = false }) => (
     <div className="bg-white px-6 py-3 flex items-center justify-between shadow">
       <div className="flex items-center gap-3">
-        {/* FLECHA VOLVER */}
         {mostrarVolver && (
           <button
             onClick={() => setDetalle(null)}
@@ -119,13 +141,19 @@ export default function SupervisorPage() {
         <h1 className="text-xl font-bold">Urban<span className="text-blue-500">Log</span></h1>
       </div>
       <div className="flex items-center gap-4">
-        {/* BOTON IR AL MAPA */}
+        {/* BOTON ADMIN - solo visible para admins */}
+        {esAdmin && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">
+            ⚙️ Admin
+          </button>
+        )}
         <button
           onClick={() => navigate("/mapa")}
           className="text-sm text-blue-500 hover:text-blue-700 font-medium transition-colors">
           🗺️ Ver mapa
         </button>
-        {/* CERRAR SESION */}
         <button
           onClick={() => signOut(() => window.location.href = "/login")}
           className="text-sm text-gray-600 flex items-center gap-1 hover:text-red-500 transition-colors">
@@ -141,10 +169,8 @@ export default function SupervisorPage() {
       <div className="min-h-screen bg-gray-100 flex flex-col">
         <Header mostrarVolver={true} />
 
-        {/* CONTENIDO */}
         <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
 
-          {/* INFO REPORTE */}
           <div className="bg-white rounded-xl shadow p-4 flex items-center gap-3 relative">
             <span className="text-3xl">{ICONOS[detalle.categoria] || "📍"}</span>
             <div className="flex-1 text-sm">
@@ -155,7 +181,6 @@ export default function SupervisorPage() {
               <p className="text-gray-500">{detalle.categoria} | Prioridad: {detalle.prioridad || "x"}</p>
             </div>
 
-            {/* FOTO PERFIL */}
             <img
               src={detalle.usuarioId?.imagenPerfil || "https://via.placeholder.com/40"}
               alt="perfil"
@@ -167,7 +192,6 @@ export default function SupervisorPage() {
               }}
             />
 
-            {/* POPUP PERFIL */}
             {mostrarPerfil && (
               <div className="absolute top-14 right-4 z-10 bg-white rounded-xl shadow-lg p-4 flex flex-col items-center gap-2 w-48">
                 <img
@@ -181,7 +205,6 @@ export default function SupervisorPage() {
             )}
           </div>
 
-          {/* BOTONES CAMBIAR CATEGORIA Y PRIORIDAD */}
           <div className="flex gap-2 relative">
             <button
               onClick={() => { setMostrarPrioridades(false); setMostrarPerfil(false); setMostrarCategorias(!mostrarCategorias); }}
@@ -194,7 +217,6 @@ export default function SupervisorPage() {
               Cambiar prioridad
             </button>
 
-            {/* POPUP CATEGORIAS */}
             {mostrarCategorias && (
               <div className="absolute top-12 left-0 z-10 bg-white rounded-xl shadow-lg p-3 grid grid-cols-2 gap-3 w-56">
                 {CATEGORIAS.map((cat) => (
@@ -207,7 +229,6 @@ export default function SupervisorPage() {
               </div>
             )}
 
-            {/* POPUP PRIORIDADES */}
             {mostrarPrioridades && (
               <div className="absolute top-12 right-0 z-10 bg-white rounded-xl shadow-lg p-3 grid grid-cols-2 gap-2 w-48">
                 {PRIORIDADES.map((p) => (
@@ -220,7 +241,6 @@ export default function SupervisorPage() {
             )}
           </div>
 
-          {/* DESCRIPCION */}
           <div className="bg-white rounded-xl shadow p-4">
             <h2 className="text-2xl font-light text-center mb-3">Descripcion</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -235,7 +255,6 @@ export default function SupervisorPage() {
             </div>
           </div>
 
-          {/* BOTONES ACEPTAR/RECHAZAR */}
           <div className="flex gap-3">
             <button onClick={handleRechazar}
               className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-full transition-colors">
@@ -248,7 +267,6 @@ export default function SupervisorPage() {
           </div>
         </div>
 
-        {/* NAVBAR */}
         <div className="border-t bg-white flex justify-around py-3">
           <button onClick={() => setDetalle(null)} className="text-2xl">🕐</button>
           <button className="text-2xl">👤</button>
@@ -262,7 +280,6 @@ export default function SupervisorPage() {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header mostrarVolver={false} />
 
-      {/* BUSCADOR */}
       <div className="px-6 py-2 bg-white border-b">
         <div className="flex items-center gap-2 border border-gray-300 rounded-full px-3 py-1">
           <span className="text-gray-400">🔍</span>
@@ -276,14 +293,12 @@ export default function SupervisorPage() {
         </div>
       </div>
 
-      {/* TITULO */}
       <div className="flex justify-center my-3">
         <span className="border border-pink-400 text-pink-500 rounded-full px-4 py-1 text-sm">
           Incidentes a Revision
         </span>
       </div>
 
-      {/* LISTA */}
       <div className="w-full max-w-2xl mx-auto flex flex-col gap-2 px-4 pb-20">
         {loading ? (
           <p className="text-center text-gray-400 mt-10">Cargando reportes...</p>
@@ -308,7 +323,6 @@ export default function SupervisorPage() {
         )}
       </div>
 
-      {/* NAVBAR */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white flex justify-around py-3">
         <button className="text-2xl">🕐</button>
         <button className="text-2xl">👤</button>

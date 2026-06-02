@@ -1,15 +1,14 @@
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import SignOutButton from "../Buttons/SignOutButton";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 
 export default function Header() {
   const { isSignedIn, user } = useUser();
   const { getToken } = useAuth();
   const navigate = useNavigate();
-  const [esSupervisor, setEsSupervisor] = useState(false);
+  const [rol, setRol] = useState(null);
 
   useEffect(() => {
     const verificarRol = async () => {
@@ -29,8 +28,7 @@ export default function Header() {
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        const rol = response.data.usuario.rol;
-        setEsSupervisor(rol === "supervisor" || rol === "admin");
+        setRol(response.data.usuario.rol);
       } catch (error) {
         console.log("Error verificando rol:", error);
       }
@@ -44,12 +42,28 @@ export default function Header() {
         Urban<span className="bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">Log</span>
       </h1>
       <div className="flex items-center gap-3">
-        {esSupervisor && (
+        {/* Solo supervisor ve "Panel supervisor" */}
+        {rol === "supervisor" && (
           <button
             onClick={() => navigate("/supervisor")}
             className="border border-purple-500 rounded-full px-4 py-1 text-sm text-purple-500 hover:bg-purple-50 transition-colors">
             Panel supervisor
           </button>
+        )}
+        {/* Solo admin ve ambos botones */}
+        {rol === "admin" && (
+          <>
+            <button
+              onClick={() => navigate("/supervisor")}
+              className="border border-purple-500 rounded-full px-4 py-1 text-sm text-purple-500 hover:bg-purple-50 transition-colors">
+              Panel supervisor
+            </button>
+            <button
+              onClick={() => navigate("/admin")}
+              className="border border-red-500 rounded-full px-4 py-1 text-sm text-red-500 hover:bg-red-50 transition-colors">
+              Panel admin
+            </button>
+          </>
         )}
         {isSignedIn ? (
           <SignOutButton className="border border-gray-300 rounded-full px-4 py-1 text-sm text-gray-700 hover:bg-gray-100" />
