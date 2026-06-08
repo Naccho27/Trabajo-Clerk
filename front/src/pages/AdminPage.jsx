@@ -64,7 +64,7 @@ export default function AdminPage() {
     try {
       const token = await getToken({ template: "backend" });
       await axios.patch(
-        `${import.meta.env.VITE_API_URL}  /admin/users/${id}/role`,
+        `${import.meta.env.VITE_API_URL}/admin/users/${id}/role`,
         { rol: nuevoRol },
         { headers: { Authorization: `Bearer ${token}` } }
       );

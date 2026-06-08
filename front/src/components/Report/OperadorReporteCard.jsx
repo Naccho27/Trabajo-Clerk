@@ -21,35 +21,33 @@ export default function OperadorReporteCard({ reporte, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all"
+      className="flex items-center justify-between bg-white rounded-2xl px-6 py-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all"
     >
-      <div className="flex items-center gap-3">
-        <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />
+      <div className="flex items-center gap-4">
+        <img src={icons[reporte.categoria]} className="w-12 h-12" alt={reporte.categoria} />
         <div>
-          <p className="text-sm font-semibold text-gray-800">{reporte.titulo}</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-base font-semibold text-gray-800 mb-0.5">{reporte.titulo}</p>
+          <p className="text-sm text-gray-400 mb-2">
             {reporte.ubicacion?.direccion ?? "Sin dirección"} · {reporte.ubicacion?.ciudad}
           </p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2">
             {badge && (
-              <span className={`${badge.bg} ${badge.text} text-xs px-2 py-0.5 rounded-full`}>
+              <span className={`${badge.bg} ${badge.text} text-xs px-3 py-1 rounded-full font-medium`}>
                 {badge.label}
               </span>
             )}
             <span className={`text-xs font-medium ${prioridadColor}`}>
               {reporte.prioridad}
             </span>
-              {(reporte.estado === "resolved" || reporte.estado === "rejected") && (
-    <span className="text-xs text-gray-400">
-      {new Date(reporte.fechaResolucion || reporte.updatedAt).toLocaleDateString("es-AR")}
-    </span>
-  )}
+            {(reporte.estado === "resolved" || reporte.estado === "rejected") && (
+              <span className="text-xs text-gray-400">
+                {new Date(reporte.fechaResolucion || reporte.updatedAt).toLocaleDateString("es-AR")}
+              </span>
+            )}
           </div>
         </div>
       </div>
-      <button
-        className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 text-xs"
-      >
+      <button className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">
         →
       </button>
     </div>
