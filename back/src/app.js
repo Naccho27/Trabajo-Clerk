@@ -1,5 +1,4 @@
 import express from "express";
-
 import cors from "cors";
 
 import {
@@ -21,7 +20,7 @@ from "./modules/ciudadano/routes/reporte.routes.js";
 import supervisorRoutes
 from "./modules/supervisor/routes/supervisor.routes.js";
 
-import operatorRoutes 
+import operatorRoutes
 from "./modules/operator/routes/operator.routes.js";
 
 import adminRoutes
@@ -33,13 +32,23 @@ from "./modules/analytics/routes/analytics.routes.js";
 import notificacionRoutes
 from "./modules/notificaciones/routes/notificacion.routes.js";
 
-const app = express();
-
-
+import publicRoutes
+from "./modules/public/routes/public.routes.js";
 
 /*
 |--------------------------------------------------------------------------
 | Middlewares
+|--------------------------------------------------------------------------
+*/
+
+import errorHandler
+from "./shared/middlewares/error.middleware.js";
+
+const app = express();
+
+/*
+|--------------------------------------------------------------------------
+| Global Middlewares
 |--------------------------------------------------------------------------
 */
 
@@ -90,6 +99,11 @@ app.use(
   notificacionRoutes
 );
 
+app.use(
+  "/api/public",
+  publicRoutes
+);
+
 /*
 |--------------------------------------------------------------------------
 | Root
@@ -103,13 +117,44 @@ app.get("/", (req, res) => {
     mensaje:
       "API UrbanLog funcionando 🚀"
   });
+
 });
 
 app.get("/api/test", (req, res) => {
+
   res.json({
     ok: true,
-    mensaje: "test funcionando"
+    mensaje:
+      "Test funcionando"
   });
+
 });
+
+/*
+|--------------------------------------------------------------------------
+| 404
+|--------------------------------------------------------------------------
+*/
+
+app.use((req, res) => {
+
+  res.status(404).json({
+
+    ok: false,
+
+    mensaje:
+      "Ruta no encontrada"
+
+  });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Error Handler
+|--------------------------------------------------------------------------
+*/
+
+app.use(errorHandler);
 
 export default app;
