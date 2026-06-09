@@ -155,3 +155,19 @@ export const unblockUser =
     }
 
   };
+
+
+import { createUserService } from "../services/admin.service.js";
+
+export const createUser = async (req, res, next) => {
+  try {
+    const { nombreUsuario, email, password, rol } = req.body;
+    if (!nombreUsuario || !email || !password || !rol) {
+      return res.status(400).json({ ok: false, mensaje: "Todos los campos son obligatorios" });
+    }
+    const usuario = await createUserService({ nombreUsuario, email, password, rol });
+    res.status(201).json({ ok: true, usuario });
+  } catch (error) {
+    next(error);
+  }
+};  

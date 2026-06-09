@@ -104,3 +104,31 @@ export const unblockUserService =
     return usuario;
 
   };
+
+
+
+  import { createClerkClient } from "@clerk/backend";
+
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
+
+export const createUserService = async ({ nombreUsuario, email, password, rol }) => {
+  const clerkUser = await clerkClient.users.createUser({
+    username: nombreUsuario,
+    emailAddress: [email],
+    password,
+  });
+
+  const usuario = await Usuario.create({
+    clerkId: clerkUser.id,
+    nombreUsuario,
+    email,
+    imagenPerfil: clerkUser.imageUrl || "",
+    rol,
+    activo: true,
+  });
+
+  return usuario;
+};  
+

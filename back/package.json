@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@clerk/backend": "^3.5.0",
     "@clerk/express": "^2.1.15",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",

@@ -1,23 +1,64 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Navbar/Header";
 import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
-import { icons } from "../assets/icons/icons.js";
+import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
 import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ROLES = ["ciudadano", "supervisor", "operador", "admin"];
 
 const ROL_COLORES = {
-  ciudadano: "bg-gray-100 text-gray-600",
+  ciudadano:  "bg-gray-100 text-gray-600",
   supervisor: "bg-purple-100 text-purple-600",
-  operador: "bg-green-100 text-green-600",
-  admin: "bg-red-100 text-red-600",
+  operador:   "bg-green-100 text-green-600",
+  admin:      "bg-red-100 text-red-600",
 };
 
+const ESTADO_COLORES = {
+  open:        "bg-blue-100 text-blue-600",
+  in_progress: "bg-yellow-100 text-yellow-600",
+  resolved:    "bg-green-100 text-green-600",
+  rejected:    "bg-red-100 text-red-600",
+};
+
+const NAV_ITEMS = [
+  { key: "dashboard", label: "Dashboard", icon: "📊" },
+  { key: "usuarios",  label: "Usuarios",  icon: "👥" },
+  { key: "crear",     label: "Crear usuario", icon: "➕" },
+];
+
+function Sidebar({ seccion, setSeccion }) {
+  return (
+    <div className="fixed top-[56px] left-0 bottom-0 w-52 bg-white border-r border-gray-100 flex flex-col py-4 px-3 z-40">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Panel Admin</p>
+      {NAV_ITEMS.map((item) => (
+        <button
+          key={item.key}
+          onClick={() => setSeccion(item.key)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left mb-1 ${
+            seccion === item.key ? "text-white" : "text-gray-600 hover:bg-gray-100"
+          }`}
+          style={seccion === item.key
+            ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
+            : {}}
+        >
+          <span>{item.icon}</span>
+          <span>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const { getToken } = useAuth();
+  const navigate = useNavigate();
+
+  const [seccion, setSeccion] = useState("dashboard");
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
@@ -26,7 +67,22 @@ export default function AdminPage() {
   const [reportesUsuario, setReportesUsuario] = useState([]);
   const [loadingReportes, setLoadingReportes] = useState(false);
 
-  useEffect(() => { cargarUsuarios(); }, []);
+  const [estadoData, setEstadoData] = useState([]);
+  const [categoriaData, setCategoriaData] = useState([]);
+  const [prioridadData, setPrioridadData] = useState([]);
+  const [porcentaje, setPorcentaje] = useState(null);
+  const [tiempoPromedio, setTiempoPromedio] = useState(null);
+
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
+  const [creandoUsuario, setCreandoUsuario] = useState(false);
+  const [errorCrear, setErrorCrear] = useState("");
+  const [exitoCrear, setExitoCrear] = useState("");
+
+  useEffect(() => { cargarTodo(); }, []);
+
+  const cargarTodo = async () => {
+    await Promise.all([cargarUsuarios(), cargarAnalytics()]);
+  };
 
   const cargarUsuarios = async () => {
     try {
@@ -37,6 +93,25 @@ export default function AdminPage() {
       console.log("Error cargando usuarios:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarAnalytics = async () => {
+    try {
+      const [estados, categorias, prioridades, resueltos, tiempo] = await Promise.all([
+        obtenerReportesPorEstado(),
+        obtenerReportesPorCategoria(),
+        obtenerReportesPorPrioridad(),
+        obtenerPorcentajeResueltos(),
+        obtenerTiempoPromedio(),
+      ]);
+      setEstadoData(estados.data || []);
+      setCategoriaData(categorias.data || []);
+      setPrioridadData(prioridades.data || []);
+      setPorcentaje(resueltos.data);
+      setTiempoPromedio(tiempo.data);
+    } catch (error) {
+      console.log("Error cargando analytics:", error);
     }
   };
 
@@ -64,7 +139,7 @@ export default function AdminPage() {
     try {
       const token = await getToken({ template: "backend" });
       await axios.patch(
-        `${import.meta.env.VITE_API_URL}/admin/users/${id}/role`,
+        `${API_URL}/admin/users/${id}/role`,
         { rol: nuevoRol },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -91,6 +166,27 @@ export default function AdminPage() {
     }
   };
 
+  const handleCrearUsuario = async () => {
+    setCreandoUsuario(true);
+    setErrorCrear("");
+    setExitoCrear("");
+    try {
+      const token = await getToken({ template: "backend" });
+      await axios.post(
+        `${API_URL}/admin/users`,
+        nuevoUsuario,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setExitoCrear("Usuario creado correctamente.");
+      setNuevoUsuario({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
+      cargarUsuarios();
+    } catch (error) {
+      setErrorCrear(error.response?.data?.mensaje || "Error al crear usuario");
+    } finally {
+      setCreandoUsuario(false);
+    }
+  };
+
   const usuariosFiltrados = usuarios.filter((u) =>
     u.nombreUsuario?.toLowerCase().includes(busqueda.toLowerCase()) ||
     u.email?.toLowerCase().includes(busqueda.toLowerCase())
@@ -101,176 +197,270 @@ export default function AdminPage() {
     return (
       <div className="w-screen h-screen flex flex-col bg-gray-50">
         <Header />
-        <div className="flex-1 flex justify-center overflow-hidden">
-          <div className="w-full max-w-md flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto pt-16 px-4 pb-6 flex flex-col gap-4">
+        <div className="flex flex-1 overflow-hidden pt-[56px]">
+          <Sidebar seccion={seccion} setSeccion={(s) => { setSeccion(s); setPerfilUsuario(null); }} />
+          <div className="flex-1 ml-52 overflow-y-auto px-8 py-6 flex flex-col gap-4">
+            <button
+              onClick={() => setPerfilUsuario(null)}
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit"
+            >
+              ← Volver
+            </button>
 
-              <button
-                onClick={() => setPerfilUsuario(null)}
-                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mt-2"
-              >
-                ← Volver
-              </button>
-
-              {/* Card perfil */}
-              <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
-                <img
-                  src={perfilUsuario.imagenPerfil || "https://via.placeholder.com/60"}
-                  alt="perfil"
-                  className="w-14 h-14 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800">{perfilUsuario.nombreUsuario}</p>
-                  <p className="text-xs text-gray-400">{perfilUsuario.email}</p>
-                  <div className="flex gap-2 mt-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[perfilUsuario.rol]}`}>
-                      {perfilUsuario.rol}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${perfilUsuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
-                      {perfilUsuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
-                    </span>
-                  </div>
+            <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-6">
+              <img
+                src={perfilUsuario.imagenPerfil || "https://via.placeholder.com/60"}
+                alt="perfil"
+                className="w-16 h-16 rounded-full object-cover"
+              />
+              <div>
+                <p className="font-semibold text-lg text-gray-800">{perfilUsuario.nombreUsuario}</p>
+                <p className="text-sm text-gray-400">{perfilUsuario.email}</p>
+                <div className="flex gap-2 mt-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[perfilUsuario.rol]}`}>
+                    {perfilUsuario.rol}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${perfilUsuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                    {perfilUsuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
+                  </span>
                 </div>
               </div>
-
-              {/* Título reportes */}
-              <div className="flex items-center justify-center">
-                <span
-                  className="text-sm font-semibold px-5 py-1.5 rounded-full text-white"
-                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
-                >
-                  Reportes del usuario
-                </span>
-              </div>
-
-              {loadingReportes ? (
-                <div className="flex items-center justify-center h-40">
-                  <p className="text-sm text-gray-400">Cargando reportes...</p>
-                </div>
-              ) : reportesUsuario.length === 0 ? (
-                <div className="flex items-center justify-center h-40">
-                  <p className="text-sm text-gray-400">Este usuario no tiene reportes</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {reportesUsuario.map((reporte) => (
-                    <div key={reporte._id} className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3">
-                      <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{reporte.titulo || "Sin título"}</p>
-                        <p className="text-xs text-gray-400 capitalize">{reporte.categoria} · {reporte.prioridad}</p>
-                        <p className="text-xs text-gray-400">Estado: {reporte.estado}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+
+            <p className="font-semibold text-gray-700">Reportes del usuario ({reportesUsuario.length})</p>
+
+            {loadingReportes ? (
+              <p className="text-gray-400 text-sm">Cargando reportes...</p>
+            ) : reportesUsuario.length === 0 ? (
+              <p className="text-gray-400 text-sm">Este usuario no tiene reportes</p>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Título</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Categoría</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Prioridad</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportesUsuario.map((r, i) => (
+                      <tr key={r._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <td className="px-4 py-3 text-gray-700">{r.titulo || "Sin título"}</td>
+                        <td className="px-4 py-3 capitalize text-gray-500">{r.categoria}</td>
+                        <td className="px-4 py-3 capitalize text-gray-500">{r.prioridad}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORES[r.estado] || "bg-gray-100 text-gray-600"}`}>
+                            {r.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // VISTA LISTA
   return (
     <div className="w-screen h-screen flex flex-col bg-gray-50">
       <Header />
-      <div className="flex-1 flex justify-center overflow-hidden">
-        <div className="w-full max-w-md flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto pt-16 px-4 pb-6">
+      <div className="flex flex-1 overflow-hidden pt-[56px]">
+        <Sidebar seccion={seccion} setSeccion={setSeccion} />
 
-            {/* Buscador */}
-            <div className="flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 bg-white my-4">
-              <span className="text-gray-400 text-sm">🔍</span>
-              <input
-                type="text"
-                placeholder="Buscar usuario..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="outline-none text-sm w-full bg-transparent"
-              />
-            </div>
+        <div className="flex-1 ml-52 overflow-y-auto px-8 py-6">
 
-            {/* Título */}
-            <div className="flex items-center justify-center mb-4">
-              <span
-                className="text-sm font-semibold px-5 py-1.5 rounded-full text-white"
-                style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
-              >
-                Panel Administrador
-              </span>
-            </div>
-
-            {/* Lista */}
-            {loading ? (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-sm text-gray-400">Cargando usuarios...</p>
+          {/* DASHBOARD */}
+          {seccion === "dashboard" && (
+            <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-2xl shadow-sm p-5">
+                  <p className="text-sm text-gray-400 mb-1">Total usuarios</p>
+                  <p className="text-3xl font-bold text-gray-800">{usuarios.length}</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm p-5">
+                  <p className="text-sm text-gray-400 mb-1">% Resueltos</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—"}
+                  </p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm p-5">
+                  <p className="text-sm text-gray-400 mb-1">Tiempo promedio resolución</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—"}
+                  </p>
+                </div>
               </div>
-            ) : usuariosFiltrados.length === 0 ? (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-sm text-gray-400">No hay usuarios</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {usuariosFiltrados.map((usuario) => (
-                  <div key={usuario._id} className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3 relative">
 
-                    <img
-                      src={usuario.imagenPerfil || "https://via.placeholder.com/40"}
-                      alt="perfil"
-                      className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => verPerfil(usuario)}
-                    />
-
-                    <div className="flex-1 text-sm">
-                      <p className="font-semibold text-gray-800">{usuario.nombreUsuario}</p>
-                      <p className="text-xs text-gray-400">{usuario.email}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol] || "bg-gray-100 text-gray-600"}`}>
-                          {usuario.rol}
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${usuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
-                          {usuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
-                        </span>
-                      </div>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { titulo: "Por estado", data: estadoData, colorFn: (e) => ESTADO_COLORES[e._id] },
+                  { titulo: "Por categoría", data: categoriaData, colorFn: null },
+                  { titulo: "Por prioridad", data: prioridadData, colorFn: null },
+                ].map(({ titulo, data, colorFn }) => (
+                  <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100">
+                      <p className="font-semibold text-gray-700">{titulo}</p>
                     </div>
-
-                    <div className="flex flex-col gap-1 items-end">
-                      <button
-                        onClick={() => setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id)}
-                        className="text-xs border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-50 transition-colors text-gray-600"
-                      >
-                        Cambiar rol
-                      </button>
-                      {usuario.activo ? (
-                        <button onClick={() => handleBloquear(usuario._id)}
-                          className="text-xs border border-red-200 text-red-500 rounded-full px-3 py-1 hover:bg-red-50 transition-colors">
-                          Bloquear
-                        </button>
-                      ) : (
-                        <button onClick={() => handleDesbloquear(usuario._id)}
-                          className="text-xs border border-green-200 text-green-500 rounded-full px-3 py-1 hover:bg-green-50 transition-colors">
-                          Desbloquear
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Popup cambiar rol */}
-                    {cambiandoRol === usuario._id && (
-                      <div className="absolute top-16 right-4 z-10 bg-white rounded-2xl shadow-lg p-3 flex flex-col gap-2 w-36">
-                        {ROLES.map((r) => (
-                          <button key={r} onClick={() => handleCambiarRol(usuario._id, r)}
-                            className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 transition-opacity font-medium ${ROL_COLORES[r]}`}>
-                            {r}
-                          </button>
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
+                          <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.map((item, i) => (
+                          <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td className="px-4 py-2">
+                              {colorFn ? (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
+                                  {item._id}
+                                </span>
+                              ) : (
+                                <span className="capitalize text-gray-600">{item._id}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
+                          </tr>
                         ))}
-                      </div>
-                    )}
+                      </tbody>
+                    </table>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* USUARIOS */}
+          {seccion === "usuarios" && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 bg-white w-full max-w-sm">
+                <span className="text-gray-400 text-sm">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Buscar usuario..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  className="outline-none text-sm w-full bg-transparent"
+                />
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Usuario</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Email</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Rol</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr><td colSpan={5} className="text-center py-8 text-gray-400">Cargando...</td></tr>
+                    ) : usuariosFiltrados.length === 0 ? (
+                      <tr><td colSpan={5} className="text-center py-8 text-gray-400">No hay usuarios</td></tr>
+                    ) : usuariosFiltrados.map((usuario, i) => (
+                      <tr key={usuario._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={usuario.imagenPerfil || "https://via.placeholder.com/32"}
+                              alt="perfil"
+                              className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80"
+                              onClick={() => verPerfil(usuario)}
+                            />
+                            <span className="font-medium text-gray-800">{usuario.nombreUsuario}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">{usuario.email}</td>
+                        <td className="px-4 py-3">
+                          <div className="relative">
+                            <button
+                              onClick={() => setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id)}
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}
+                            >
+                              {usuario.rol} ▾
+                            </button>
+                            {cambiandoRol === usuario._id && (
+                              <div className="absolute top-6 left-0 z-10 bg-white rounded-xl shadow-lg p-2 flex flex-col gap-1 w-32">
+                                {ROLES.map((r) => (
+                                  <button key={r} onClick={() => handleCambiarRol(usuario._id, r)}
+                                    className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 font-medium ${ROL_COLORES[r]}`}>
+                                    {r}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${usuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                            {usuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {usuario.activo ? (
+                            <button onClick={() => handleBloquear(usuario._id)}
+                              className="text-xs border border-red-200 text-red-500 rounded-full px-3 py-1 hover:bg-red-50">
+                              Bloquear
+                            </button>
+                          ) : (
+                            <button onClick={() => handleDesbloquear(usuario._id)}
+                              className="text-xs border border-green-200 text-green-500 rounded-full px-3 py-1 hover:bg-green-50">
+                              Desbloquear
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* CREAR USUARIO */}
+          {seccion === "crear" && (
+            <div className="max-w-md">
+              <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4">
+                <p className="font-semibold text-gray-700 text-lg">Crear nuevo usuario</p>
+                {errorCrear && <p className="text-red-500 text-sm bg-red-50 rounded-lg p-2">{errorCrear}</p>}
+                {exitoCrear && <p className="text-green-600 text-sm bg-green-50 rounded-lg p-2">{exitoCrear}</p>}
+                <div className="flex flex-col gap-3">
+                  <input type="text" placeholder="Nombre de usuario"
+                    value={nuevoUsuario.nombreUsuario}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombreUsuario: e.target.value })}
+                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400" />
+                  <input type="email" placeholder="Email"
+                    value={nuevoUsuario.email}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })}
+                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400" />
+                  <input type="password" placeholder="Contraseña"
+                    value={nuevoUsuario.password}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })}
+                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400" />
+                  <select value={nuevoUsuario.rol}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
+                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400 bg-white">
+                    {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <button onClick={handleCrearUsuario} disabled={creandoUsuario}
+                    className="text-white font-semibold rounded-full py-2 text-sm transition-colors disabled:opacity-60"
+                    style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
+                    {creandoUsuario ? "Creando..." : "Crear usuario"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
