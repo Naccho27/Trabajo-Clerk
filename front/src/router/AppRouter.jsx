@@ -10,11 +10,16 @@ import Navbar from "../components/Navbar/Navbar";
 import NavbarPublic from "../components/Navbar/NavbarPublic";
 import OperadorPage from "../pages/OperadorPage.jsx";
 import SupervisorPage from "../pages/SupervisorPage";
-import AdminPage from "../pages/AdminPage"; // 👈 de Alan
+import AdminPage from "../pages/AdminPage";
 
 function MapPage() {
   const [filtro, setFiltro] = useState("todos");
   const [modoCrear, setModoCrear] = useState(false);
+  const [modoMapa, setModoMapa] = useState("normal");
+
+  const handleToggleMapa = () => {
+    setModoMapa(prev => prev === "normal" ? "calor" : "normal");
+  };
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
@@ -23,9 +28,14 @@ function MapPage() {
         filtro={filtro}
         modoCrear={modoCrear}
         onCancelarCrear={() => setModoCrear(false)}
+        modoMapa={modoMapa}
       />
       <FilterBar filtroActivo={filtro} onFiltroChange={setFiltro} />
-      <Navbar onCrearReporte={() => setModoCrear(true)} />
+      <Navbar
+        onCrearReporte={() => setModoCrear(true)}
+        modoMapa={modoMapa}
+        onToggleMapa={handleToggleMapa}
+      />
     </div>
   );
 }
@@ -36,7 +46,7 @@ function MapPagePublic() {
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
       <Header />
-      <MapView filtro={filtro} modoCrear={false} onCancelarCrear={() => {}} />
+      <MapView filtro={filtro} modoCrear={false} onCancelarCrear={() => {}} modoMapa="normal" />
       <FilterBar filtroActivo={filtro} onFiltroChange={setFiltro} />
       <NavbarPublic />
     </div>

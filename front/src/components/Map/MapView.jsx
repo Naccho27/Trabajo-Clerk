@@ -1,13 +1,13 @@
-// src/components/Map/MapView.jsx
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import SearchBar from "./SearchBar";
 import ReportModal from "../Report/ReportModal.jsx";
 import ReportDetailModal from "../Report/ReportDetailModal.jsx";
 import { icons } from "../../assets/icons/icons.js";
+import HeatmapLayer from "./HeatmapLayer";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -33,12 +33,12 @@ function ClickHandler({ modoCrear, onMapClick }) {
   return null;
 }
 
-export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }) {
+export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, modoMapa = "normal" }) {
   const [reportes, setReportes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [selectedReporteId, setSelectedReporteId] = useState(null); // 👈 nuevo
+  const [selectedReporteId, setSelectedReporteId] = useState(null);
 
   const cargarReportes = async () => {
     try {
@@ -77,8 +77,40 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }
       : reportes.filter((r) => r.categoria === filtro);
 
   const reportesVisibles = reportesFiltrados.filter(
-  (r) => r.estado === "in_progress"
-);
+    (r) => r.estado === "in_progress"
+  );
+
+  const markers = useMemo(() => (
+    reportesVisibles
+      .filter(r => typeof r.ubicacion?.lat === "number" && typeof r.ubicacion?.lng === "number")
+      .map((reporte) => (
+        <Marker
+          key={reporte._id}
+          position={[reporte.ubicacion.lat, reporte.ubicacion.lng]}
+          icon={iconos[reporte.categoria] || iconos["todos"]}
+        >
+          <Popup minWidth={200}>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <img src={icons[reporte.categoria]} className="w-6 h-6" alt={reporte.categoria} />
+                <span className="text-xs text-gray-400 capitalize">{reporte.categoria}</span>
+              </div>
+              <h3 className="font-bold text-sm leading-tight">{reporte.titulo}</h3>
+              <span className="text-xs text-gray-400">
+                {new Date(reporte.createdAt).toLocaleDateString("es-AR")}
+              </span>
+              <button
+                onClick={() => setSelectedReporteId(reporte._id)}
+                className="mt-1 w-full py-1.5 rounded-full text-white text-xs font-semibold"
+                style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+              >
+                Ver detalle
+              </button>
+            </div>
+          </Popup>
+        </Marker>
+      ))
+  ), [reportesVisibles, selectedReporteId]);
 
   if (loading) {
     return (
@@ -87,13 +119,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear }
       </div>
     );
   }
-console.log("VISIBLES:", reportesVisibles.map(r => ({
-  titulo: r.titulo,
-  estado: r.estado,
-  lat: r.ubicacion?.lat,
-  lng: r.ubicacion?.lng,
-  latType: typeof r.ubicacion?.lat
-})));
+
   return (
     <>
       {modoCrear && !showReportModal && (
@@ -113,7 +139,6 @@ console.log("VISIBLES:", reportesVisibles.map(r => ({
         />
       )}
 
-      {/* 👇 modal de detalle */}
       {selectedReporteId && (
         <ReportDetailModal
           reporteId={selectedReporteId}
@@ -137,40 +162,8 @@ console.log("VISIBLES:", reportesVisibles.map(r => ({
         />
         <ClickHandler modoCrear={modoCrear} onMapClick={handleMapClick} />
         <SearchBar />
-
-        {reportesVisibles
-          .filter(
-            (r) =>
-              typeof r.ubicacion?.lat === "number" &&
-              typeof r.ubicacion?.lng === "number"
-          )
-          .map((reporte) => (
-            <Marker
-              key={reporte._id}
-              position={[reporte.ubicacion.lat, reporte.ubicacion.lng]}
-              icon={iconos[reporte.categoria] || iconos["todos"]}
-            >
-              <Popup minWidth={200}>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <img src={icons[reporte.categoria]} className="w-6 h-6" alt={reporte.categoria} />
-                    <span className="text-xs text-gray-400 capitalize">{reporte.categoria}</span>
-                  </div>
-                  <h3 className="font-bold text-sm leading-tight">{reporte.titulo}</h3>
-                  <span className="text-xs text-gray-400">
-                    {new Date(reporte.createdAt).toLocaleDateString("es-AR")}
-                  </span>
-                  <button
-                    onClick={() => setSelectedReporteId(reporte._id)}
-                    className="mt-1 w-full py-1.5 rounded-full text-white text-xs font-semibold"
-                    style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
-                  >
-                    Ver detalle
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+        {modoMapa === "calor" && <HeatmapLayer reportes={reportes} />}
+        {markers}
       </MapContainer>
     </>
   );
