@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { icons } from "../assets/icons/icons.js";
+import ReporteCard from "../components/Report/ReporteCard.jsx";
+import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
 import PanelLayout from "../components/Panel/PanelLayout.jsx";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import BarrasCategoria from "../components/Panel/BarrasCategoria.jsx";
@@ -234,14 +236,11 @@ export default function SupervisorPage() {
         <Dashboard reportes={reportes} user={user} />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 bg-white max-w-md"
-            style={{ animation: "fadeInDown 0.4s ease-out" }}>
-            <span className="text-gray-400 text-sm">🔍</span>
-            <input type="text" placeholder="Buscar reporte..."
-              value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-              className="outline-none text-sm w-full bg-transparent" />
-          </div>
-
+          <BuscadorInput
+            value={busqueda}
+            onChange={setBusqueda}
+            placeholder="Buscar reporte..."
+          />
           {reportesFiltrados.length === 0 ? (
             <div className="flex items-center justify-center h-40"
               style={{ animation: "fadeInUp 0.4s ease-out" }}>
@@ -250,23 +249,13 @@ export default function SupervisorPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {reportesFiltrados.map((reporte, i) => (
-                <div key={reporte._id} onClick={() => verDetalle(reporte)}
-                  className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
-                  style={{ animation: `fadeInUp 0.4s ease-out ${i * 60}ms both` }}>
-                  <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{reporte.titulo}</p>
-                    <p className="text-xs text-gray-400 capitalize">{reporte.categoria}</p>
-                    <p className="text-xs text-gray-400">{reporte.ubicacion?.direccion}</p>
-                  </div>
-                  {PRIORIDAD_CONFIG[reporte.prioridad] && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0"
-                      style={{ background: PRIORIDAD_CONFIG[reporte.prioridad].bg, color: PRIORIDAD_CONFIG[reporte.prioridad].color }}>
-                      {PRIORIDAD_CONFIG[reporte.prioridad].label}
-                    </span>
-                  )}
-                  <span className="text-gray-300 text-sm shrink-0">→</span>
-                </div>
+                <ReporteCard
+                  key={reporte._id}
+                  reporte={reporte}
+                  onClick={() => verDetalle(reporte)}
+                  mostrarEstado={false}
+                  delay={`${i * 60}ms`}
+                />
               ))}
             </div>
           )}

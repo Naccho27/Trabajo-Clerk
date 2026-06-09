@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import axios from "axios";
-import OperadorReporteCard from "../components/Report/OperadorReporteCard.jsx";
+import ReporteCard from "../components/Report/ReporteCard.jsx";
 import OperadorReporteDetail from "../components/Report/OperadorReporteDetail.jsx";
 import PanelLayout from "../components/Panel/PanelLayout.jsx";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import BarrasCategoria from "../components/Panel/BarrasCategoria.jsx";
 import StatCard from "../components/Panel/StatCard.jsx";
 import ActividadReciente from "../components/Panel/ActividadReciente.jsx";
+import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -34,13 +35,11 @@ function Dashboard({ enProgreso, historial, user }) {
   return (
     <div className="flex flex-col gap-6">
       <DashboardSaludo user={user} rol="Operador" />
-
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         {statCards.map((card) => (
           <StatCard key={card.label} {...card} />
         ))}
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <BarrasCategoria
           reportes={[...enProgreso, ...historial]}
@@ -65,6 +64,7 @@ export default function OperadorPage() {
   const [enProgreso, setEnProgreso]   = useState([]);
   const [historial, setHistorial]     = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [busqueda, setBusqueda]       = useState("");
   const [selectedReporte, setSelectedReporte] = useState(null);
   const [comentarios, setComentarios] = useState([]);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
@@ -107,17 +107,29 @@ export default function OperadorPage() {
   };
 
   const handleCerrar = () => { setSelectedReporte(null); setComentarios([]); };
+
   const handleActualizar = async () => {
     if (selectedReporte) await handleVerDetalle(selectedReporte._id);
     cargar();
   };
 
+  const handleVistaChange = (id) => {
+    setBusqueda("");
+    setVistaActiva(id);
+  };
+
   useEffect(() => { cargar(); }, []);
 
   const countEnProgreso = validados.length + enProgreso.length;
+
   const reportesLista = vistaActiva === "en_progreso"
     ? [...validados, ...enProgreso]
     : historial;
+
+  const reportesFiltrados = reportesLista.filter((r) =>
+    r.titulo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    r.categoria?.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   const sidebarItems = [
     { id: "dashboard",   label: "Dashboard",   count: 0 },
@@ -131,30 +143,31 @@ export default function OperadorPage() {
         sidebarTitle="Panel Operador"
         sidebarItems={sidebarItems}
         vistaActiva={vistaActiva}
-        onVistaChange={setVistaActiva}
+        onVistaChange={handleVistaChange}
         loading={loading}
       >
         {vistaActiva === "dashboard" ? (
           <Dashboard enProgreso={enProgreso} historial={historial} user={user} />
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium text-gray-500 mb-2"
-              style={{ animation: "fadeInDown 0.4s ease-out" }}>
-              {vistaActiva === "en_progreso" ? "Incidentes activos" : "Historial de incidentes"}
-            </p>
-            {reportesLista.length === 0 ? (
+            <BuscadorInput
+              value={busqueda}
+              onChange={setBusqueda}
+              placeholder="Buscar incidente..."
+            />
+            {reportesFiltrados.length === 0 ? (
               <div className="flex items-center justify-center h-40"
                 style={{ animation: "fadeInUp 0.4s ease-out" }}>
                 <p className="text-sm text-gray-400">No hay incidentes en esta sección</p>
               </div>
-            ) : reportesLista.map((reporte, i) => (
-              <div key={reporte._id}
-                style={{ animation: `fadeInUp 0.4s ease-out ${i * 60}ms both` }}>
-                <OperadorReporteCard
-                  reporte={reporte}
-                  onClick={() => handleVerDetalle(reporte._id)}
-                />
-              </div>
+            ) : reportesFiltrados.map((reporte, i) => (
+              <ReporteCard
+                key={reporte._id}
+                reporte={reporte}
+                onClick={() => handleVerDetalle(reporte._id)}
+                mostrarEstado={vistaActiva === "historial"}
+                delay={`${i * 60}ms`}
+              />
             ))}
           </div>
         )}
