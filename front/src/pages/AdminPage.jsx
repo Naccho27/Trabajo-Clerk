@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react"; // 👈 agregá useUser
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Navbar/Header";
+import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx"; // 👈
 import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
@@ -26,9 +27,9 @@ const ESTADO_COLORES = {
 };
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", icon: "📊" },
-  { key: "usuarios",  label: "Usuarios",  icon: "👥" },
-  { key: "crear",     label: "Crear usuario", icon: "➕" },
+  { key: "dashboard", label: "Dashboard" },
+  { key: "usuarios",  label: "Usuarios" },
+  { key: "crear",     label: "Crear usuario" },
 ];
 
 function Sidebar({ seccion, setSeccion }) {
@@ -46,7 +47,6 @@ function Sidebar({ seccion, setSeccion }) {
             ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
             : {}}
         >
-          <span>{item.icon}</span>
           <span>{item.label}</span>
         </button>
       ))}
@@ -56,6 +56,7 @@ function Sidebar({ seccion, setSeccion }) {
 
 export default function AdminPage() {
   const { getToken } = useAuth();
+  const { user } = useUser(); // 👈
   const navigate = useNavigate();
 
   const [seccion, setSeccion] = useState("dashboard");
@@ -199,20 +200,16 @@ export default function AdminPage() {
         <Header />
         <div className="flex flex-1 overflow-hidden pt-[56px]">
           <Sidebar seccion={seccion} setSeccion={(s) => { setSeccion(s); setPerfilUsuario(null); }} />
-          <div className="flex-1 ml-52 overflow-y-auto px-8 py-6 flex flex-col gap-4">
-            <button
-              onClick={() => setPerfilUsuario(null)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit"
-            >
+          <div className="flex-1 ml-52 overflow-y-auto px-8 py-6 flex flex-col gap-4"
+            style={{ animation: "fadeInUp 0.4s ease-out" }}>
+            <button onClick={() => setPerfilUsuario(null)}
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit">
               ← Volver
             </button>
 
             <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-6">
-              <img
-                src={perfilUsuario.imagenPerfil || "https://via.placeholder.com/60"}
-                alt="perfil"
-                className="w-16 h-16 rounded-full object-cover"
-              />
+              <img src={perfilUsuario.imagenPerfil || "https://via.placeholder.com/60"}
+                alt="perfil" className="w-16 h-16 rounded-full object-cover" />
               <div>
                 <p className="font-semibold text-lg text-gray-800">{perfilUsuario.nombreUsuario}</p>
                 <p className="text-sm text-gray-400">{perfilUsuario.email}</p>
@@ -278,32 +275,34 @@ export default function AdminPage() {
           {/* DASHBOARD */}
           {seccion === "dashboard" && (
             <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white rounded-2xl shadow-sm p-5">
-                  <p className="text-sm text-gray-400 mb-1">Total usuarios</p>
-                  <p className="text-3xl font-bold text-gray-800">{usuarios.length}</p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm p-5">
-                  <p className="text-sm text-gray-400 mb-1">% Resueltos</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—"}
-                  </p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm p-5">
-                  <p className="text-sm text-gray-400 mb-1">Tiempo promedio resolución</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—"}
-                  </p>
-                </div>
-              </div>
 
+              {/* 👈 Saludo */}
+              <DashboardSaludo user={user} rol="Admin" />
+
+              {/* Stat cards con animación */}
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { titulo: "Por estado", data: estadoData, colorFn: (e) => ESTADO_COLORES[e._id] },
-                  { titulo: "Por categoría", data: categoriaData, colorFn: null },
-                  { titulo: "Por prioridad", data: prioridadData, colorFn: null },
-                ].map(({ titulo, data, colorFn }) => (
-                  <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  { label: "Total usuarios",           value: usuarios.length,   color: "text-gray-800",  delay: "0ms" },
+                  { label: "% Resueltos",              value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600", delay: "100ms" },
+                  { label: "Tiempo promedio resolución", value: tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
+                ].map((card) => (
+                  <div key={card.label} className="bg-white rounded-2xl shadow-sm p-5"
+                    style={{ animation: `fadeInUp 0.5s ease-out ${card.delay} both` }}>
+                    <p className="text-sm text-gray-400 mb-1">{card.label}</p>
+                    <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tablas con animación */}
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
+                  { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
+                  { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
+                ].map(({ titulo, data, colorFn, delay }) => (
+                  <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
+                    style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
                     <div className="px-5 py-4 border-b border-gray-100">
                       <p className="font-semibold text-gray-700">{titulo}</p>
                     </div>
@@ -339,16 +338,12 @@ export default function AdminPage() {
 
           {/* USUARIOS */}
           {seccion === "usuarios" && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.4s ease-out" }}>
               <div className="flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 bg-white w-full max-w-sm">
                 <span className="text-gray-400 text-sm">🔍</span>
-                <input
-                  type="text"
-                  placeholder="Buscar usuario..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="outline-none text-sm w-full bg-transparent"
-                />
+                <input type="text" placeholder="Buscar usuario..."
+                  value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+                  className="outline-none text-sm w-full bg-transparent" />
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -368,15 +363,15 @@ export default function AdminPage() {
                     ) : usuariosFiltrados.length === 0 ? (
                       <tr><td colSpan={5} className="text-center py-8 text-gray-400">No hay usuarios</td></tr>
                     ) : usuariosFiltrados.map((usuario, i) => (
-                      <tr key={usuario._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <tr key={usuario._id}
+                        className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                        style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <img
-                              src={usuario.imagenPerfil || "https://via.placeholder.com/32"}
+                            <img src={usuario.imagenPerfil || "https://via.placeholder.com/32"}
                               alt="perfil"
                               className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80"
-                              onClick={() => verPerfil(usuario)}
-                            />
+                              onClick={() => verPerfil(usuario)} />
                             <span className="font-medium text-gray-800">{usuario.nombreUsuario}</span>
                           </div>
                         </td>
@@ -385,8 +380,7 @@ export default function AdminPage() {
                           <div className="relative">
                             <button
                               onClick={() => setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id)}
-                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}
-                            >
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}>
                               {usuario.rol} ▾
                             </button>
                             {cambiandoRol === usuario._id && (
@@ -429,7 +423,7 @@ export default function AdminPage() {
 
           {/* CREAR USUARIO */}
           {seccion === "crear" && (
-            <div className="max-w-md">
+            <div className="max-w-md" style={{ animation: "fadeInUp 0.4s ease-out" }}>
               <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4">
                 <p className="font-semibold text-gray-700 text-lg">Crear nuevo usuario</p>
                 {errorCrear && <p className="text-red-500 text-sm bg-red-50 rounded-lg p-2">{errorCrear}</p>}
