@@ -1,19 +1,20 @@
-import Usuario
-from "../../ciudadano/models/Usuario.js";
+import Usuario from "../../ciudadano/models/Usuario.js";
+import Categoria from "../models/admin.categories.js";
 
+import { createClerkClient } from "@clerk/backend";
+
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
 /*
 |--------------------------------------------------------------
 | Obtener usuarios
 |--------------------------------------------------------------
 */
 
-export const getUsersService =
-  async () => {
-
-    return await Usuario.find()
-      .sort({ createdAt: -1 });
-
-  };
+export const getUsersService = async () => {
+  return await Usuario.find().sort({ createdAt: -1 });
+};
 
 /*
 |--------------------------------------------------------------
@@ -21,36 +22,21 @@ export const getUsersService =
 |--------------------------------------------------------------
 */
 
-export const addRoleService =
-  async (
-    userId,
-    rol
-  ) => {
+export const addRoleService = async (userId, rol) => {
+  const usuario = await Usuario.findById(userId);
 
-    const usuario =
-      await Usuario.findById(userId);
+  if (!usuario) {
+    throw new Error("Usuario no encontrado");
+  }
 
-    if (!usuario) {
+  if (!usuario.roles.includes(rol)) {
+    usuario.roles.push(rol);
 
-      throw new Error(
-        "Usuario no encontrado"
-      );
+    await usuario.save();
+  }
 
-    }
-
-    if (
-      !usuario.roles.includes(rol)
-    ) {
-
-      usuario.roles.push(rol);
-
-      await usuario.save();
-
-    }
-
-    return usuario;
-
-  };
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -58,42 +44,23 @@ export const addRoleService =
 |--------------------------------------------------------------
 */
 
-export const removeRoleService =
-  async (
-    userId,
-    rol
-  ) => {
+export const removeRoleService = async (userId, rol) => {
+  const usuario = await Usuario.findById(userId);
 
-    const usuario =
-      await Usuario.findById(userId);
+  if (!usuario) {
+    throw new Error("Usuario no encontrado");
+  }
 
-    if (!usuario) {
+  usuario.roles = usuario.roles.filter((r) => r !== rol);
 
-      throw new Error(
-        "Usuario no encontrado"
-      );
+  if (usuario.roles.length === 0) {
+    usuario.roles = ["ciudadano"];
+  }
 
-    }
+  await usuario.save();
 
-    usuario.roles =
-      usuario.roles.filter(
-        r => r !== rol
-      );
-
-    if (
-      usuario.roles.length === 0
-    ) {
-
-      usuario.roles =
-        ["ciudadano"];
-
-    }
-
-    await usuario.save();
-
-    return usuario;
-
-  };
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -107,28 +74,19 @@ export const removeRoleService =
 |--------------------------------------------------------------
 */
 
-export const blockUserService =
-  async (userId) => {
+export const blockUserService = async (userId) => {
+  const usuario = await Usuario.findById(userId);
 
-    const usuario =
-      await Usuario.findById(userId);
+  if (!usuario) {
+    throw new Error("Usuario no encontrado");
+  }
 
-    if (!usuario) {
+  usuario.activo = false;
 
-      throw new Error(
-        "Usuario no encontrado"
-      );
+  await usuario.save();
 
-    }
-
-    usuario.activo =
-      false;
-
-    await usuario.save();
-
-    return usuario;
-
-  };
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -136,25 +94,156 @@ export const blockUserService =
 |--------------------------------------------------------------
 */
 
-export const unblockUserService =
-  async (userId) => {
+export const unblockUserService = async (userId) => {
+  const usuario = await Usuario.findById(userId);
 
-    const usuario =
-      await Usuario.findById(userId);
+  if (!usuario) {
+    throw new Error("Usuario no encontrado");
+  }
 
-    if (!usuario) {
+  usuario.activo = true;
 
-      throw new Error(
-        "Usuario no encontrado"
-      );
+  await usuario.save();
 
-    }
+  return usuario;
+};
 
-    usuario.activo =
-      true;
+/*
+|--------------------------------------------------------------
+| Crear usuario
+|--------------------------------------------------------------
+*/
 
-    await usuario.save();
+export const createUserService = async ({
+  nombreUsuario,
+  email,
+  password,
+  roles,
+}) => {
+  const usernameLimpio = nombreUsuario.trim().replace(/\s+/g, "_");
 
-    return usuario;
+  const emailLimpio = email.trim().toLowerCase();
 
-  };
+  const existe = await Usuario.findOne({
+    email: emailLimpio,
+  });
+
+  if (existe) {
+    throw new Error("Ya existe un usuario con ese email");
+  }
+
+  const clerkUser = await clerkClient.users.createUser({
+    username: usernameLimpio,
+
+    emailAddress: [emailLimpio],
+
+    password,
+  });
+
+  const usuario = await Usuario.create({
+    clerkId: clerkUser.id,
+
+    nombreUsuario,
+
+    email: emailLimpio,
+
+    roles,
+
+    activo: true,
+  });
+
+  return usuario;
+};
+
+export const getCategoriesService = async () => {
+  return await Categoria.find().sort({ nombre: 1 });
+};
+
+export const createCategoryService = async (nombre) => {
+  const nombreLimpio = nombre.trim().toLowerCase();
+
+  const existe = await Categoria.findOne({
+    nombre: nombreLimpio,
+  });
+
+  if (existe) {
+    throw new Error("La categoría ya existe");
+  }
+
+  return await Categoria.create({
+    nombre: nombreLimpio,
+  });
+};
+/*
+|--------------------------------------------------------------
+| Editar categoría
+|--------------------------------------------------------------
+*/
+
+export const updateCategoryService = async (categoryId, nombre) => {
+  const categoria = await Categoria.findById(categoryId);
+
+  if (!categoria) {
+    throw new Error("Categoría no encontrada");
+  }
+
+  const nombreLimpio = nombre.trim().toLowerCase();
+
+  const existe = await Categoria.findOne({
+    nombre: nombreLimpio,
+
+    _id: {
+      $ne: categoryId,
+    },
+  });
+
+  if (existe) {
+    throw new Error("Ya existe una categoría con ese nombre");
+  }
+
+  categoria.nombre = nombreLimpio;
+
+  await categoria.save();
+
+  return categoria;
+};
+
+/*
+|--------------------------------------------------------------
+| Desactivar categoría
+|--------------------------------------------------------------
+*/
+
+export const disableCategoryService = async (categoryId) => {
+  const categoria = await Categoria.findById(categoryId);
+
+  if (!categoria) {
+    throw new Error("Categoría no encontrada");
+  }
+
+  categoria.activa = false;
+
+  await categoria.save();
+
+  return categoria;
+};
+
+/*
+|--------------------------------------------------------------
+| Activar categoría
+|--------------------------------------------------------------
+*/
+
+export const enableCategoryService = async (categoryId) => {
+  const categoria = await Categoria.findById(categoryId);
+
+  if (!categoria) {
+    throw new Error("Categoría no encontrada");
+  }
+
+  categoria.activa = true;
+
+  await categoria.save();
+
+  return categoria;
+};

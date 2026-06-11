@@ -6,16 +6,18 @@ import { requireRole } from "../../../shared/middlewares/requireRole.js";
 
 import { validate } from "../../../shared/middlewares/validate.middleware.js";
 
-
-console.log("IMPORT REQUIRE ROLE:", requireRole);
-
 import {
   getUsers,
-  changeUserRole,
   blockUser,
   unblockUser,
   addRole,
   removeRole,
+  createUser,
+  getCategories,
+  createCategory,
+  updateCategory,
+  disableCategory,
+  enableCategory,
 } from "../controllers/admin.controller.js";
 
 import {
@@ -26,31 +28,29 @@ import {
 const router = Router();
 
 /*
-|--------------------------------------------------------------
-| Obtener usuarios
-|--------------------------------------------------------------
+|--------------------------------------------------------------------------
+| Usuarios
+|--------------------------------------------------------------------------
 */
+
+router.post(
+  "/users",
+  authMiddleware,
+  requireRole("admin"),
+  createUser
+);
 
 router.get(
   "/users",
-
   authMiddleware,
-
   requireRole("admin"),
-
-  getUsers,
+  getUsers
 );
-
-/*
-|--------------------------------------------------------------
-| Cambiar rol
-|--------------------------------------------------------------
-*/
 
 router.patch(
   "/users/:id/add-role",
   authMiddleware,
-  ///requireRole("admin"),
+  requireRole("admin"),
   validate(addRoleSchema),
   addRole
 );
@@ -63,36 +63,59 @@ router.patch(
   removeRole
 );
 
-/*
-|--------------------------------------------------------------
-| Bloquear usuario
-|--------------------------------------------------------------
-*/
-
 router.patch(
   "/users/:id/block",
-
   authMiddleware,
-
   requireRole("admin"),
-
-  blockUser,
+  blockUser
 );
-
-/*
-|--------------------------------------------------------------
-| Desbloquear usuario
-|--------------------------------------------------------------
-*/
 
 router.patch(
   "/users/:id/unblock",
-
   authMiddleware,
-
   requireRole("admin"),
+  unblockUser
+);
 
-  unblockUser,
+/*
+|--------------------------------------------------------------------------
+| Categorías
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/categories",
+  authMiddleware,
+  requireRole("admin"),
+  getCategories
+);
+
+router.post(
+  "/categories",
+  authMiddleware,
+  requireRole("admin"),
+  createCategory
+);
+
+router.patch(
+  "/categories/:id",
+  authMiddleware,
+  requireRole("admin"),
+  updateCategory
+);
+
+router.patch(
+  "/categories/:id/disable",
+  authMiddleware,
+  requireRole("admin"),
+  disableCategory
+);
+
+router.patch(
+  "/categories/:id/enable",
+  authMiddleware,
+  requireRole("admin"),
+  enableCategory
 );
 
 export default router;
