@@ -199,6 +199,7 @@ const reporteSchema = new mongoose.Schema(
     |--------------------------------------------------------------
     */
 
+
     esDuplicado: {
       type: Boolean,
       default: false,
@@ -209,6 +210,29 @@ const reporteSchema = new mongoose.Schema(
       ref: "Reporte",
       default: null,
     },
+
+    /*
+|--------------------------------------------------------------
+| Reportes relacionados
+|--------------------------------------------------------------
+*/
+
+cantidadReportesRelacionados: {
+  type: Number,
+  default: 1,
+},
+
+usuariosRelacionados: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Usuario",
+  },
+],
+
+ultimoReporteRelacionado: {
+  type: Date,
+  default: Date.now,
+},
 
     /*
     |--------------------------------------------------------------
