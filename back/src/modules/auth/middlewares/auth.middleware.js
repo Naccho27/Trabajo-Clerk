@@ -8,10 +8,14 @@ import Usuario from
 const authMiddleware =
   async (req, res, next) => {
 
+    console.log("ENTRO A authMiddleware");
+
     try {
 
       const auth =
         getAuth(req);
+
+        console.log("AUTH MIDDLEWARE:", auth);
 
       if (!auth.userId) {
 
@@ -38,10 +42,8 @@ const authMiddleware =
 
       }
 
-      req.auth = auth;
-
-      req.user = usuario;
-
+      req.clerkAuth = auth;
+req.user = usuario;git
       next();
 
     } catch (error) {

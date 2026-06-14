@@ -79,30 +79,64 @@ export const crearReporte = async (req, res) => {
 
     /*
     |--------------------------------------------------------------------------
-    | Crear reporte
+    | Crear reporte igual para agrupar
     |--------------------------------------------------------------------------
     */
 
-    const nuevoReporte =
-      await crearReporteService({
+const nuevoReporteIgual =
+  await crearReporteService({
 
-        ...req.body,
+    ...req.body,
 
-        imagenes,
+    imagenes,
 
-        videos,
+    videos,
 
-        usuarioId:
-          usuario?._id || null,
+    usuarioId:
+      usuario?._id || null,
 
-        modoAnonimo:
-          !usuario,
-      });
+    modoAnonimo:
+      !usuario,
+  });
 
-    res.status(201).json({
-      ok: true,
-      reporte: nuevoReporte,
-    });
+/*
+|--------------------------------------------------------------------------
+| Reporte relacionado
+|--------------------------------------------------------------------------
+*/
+
+if (nuevoReporteIgual?.esDuplicado) {
+
+  return res.status(200).json({
+    ok: true,
+
+    esDuplicado: true,
+
+    mensaje:
+      "Tu reporte fue asociado a un incidente existente.",
+
+    reporte:
+      nuevoReporteIgual.reportePrincipal,
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Reporte nuevo
+|--------------------------------------------------------------------------
+*/
+
+res.status(201).json({
+  ok: true,
+
+  esDuplicado: false,
+
+  mensaje:
+    "Reporte creado correctamente.",
+
+  reporte:
+    nuevoReporteIgual,
+});
 
   } catch (error) {
 

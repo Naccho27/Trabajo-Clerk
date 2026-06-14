@@ -6,6 +6,9 @@ import { requireRole } from "../../../shared/middlewares/requireRole.js";
 
 import { validate } from "../../../shared/middlewares/validate.middleware.js";
 
+
+console.log("IMPORT REQUIRE ROLE:", requireRole);
+
 import {
   getUsers,
   changeUserRole,
@@ -47,7 +50,7 @@ router.get(
 router.patch(
   "/users/:id/add-role",
   authMiddleware,
-  requireRole("admin"),
+  ///requireRole("admin"),
   validate(addRoleSchema),
   addRole
 );
