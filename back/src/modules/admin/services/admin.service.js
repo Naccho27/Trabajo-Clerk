@@ -118,39 +118,40 @@ export const createUserService = async ({
   nombreUsuario,
   email,
   password,
-  roles,
+  roles = ["ciudadano"],
 }) => {
-  const usernameLimpio = nombreUsuario.trim().replace(/\s+/g, "_");
+  const usernameLimpio =
+    nombreUsuario.trim().replace(/\s+/g, "_");
 
-  const emailLimpio = email.trim().toLowerCase();
+  const emailLimpio =
+    email.trim().toLowerCase();
 
-  const existe = await Usuario.findOne({
-    email: emailLimpio,
-  });
+  const existe =
+    await Usuario.findOne({
+      email: emailLimpio,
+    });
 
   if (existe) {
-    throw new Error("Ya existe un usuario con ese email");
+    throw new Error(
+      "Ya existe un usuario con ese email"
+    );
   }
 
-  const clerkUser = await clerkClient.users.createUser({
-    username: usernameLimpio,
+  const clerkUser =
+    await clerkClient.users.createUser({
+      username: usernameLimpio,
+      emailAddress: [emailLimpio],
+      password,
+    });
 
-    emailAddress: [emailLimpio],
-
-    password,
-  });
-
-  const usuario = await Usuario.create({
-    clerkId: clerkUser.id,
-
-    nombreUsuario,
-
-    email: emailLimpio,
-
-    roles,
-
-    activo: true,
-  });
+  const usuario =
+    await Usuario.create({
+      clerkId: clerkUser.id,
+      nombreUsuario,
+      email: emailLimpio,
+      roles,
+      activo: true,
+    });
 
   return usuario;
 };

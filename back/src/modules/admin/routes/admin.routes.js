@@ -37,7 +37,7 @@ router.post(
   "/users",
   authMiddleware,
   requireRole("admin"),
-  createUser
+  createUser,
 );
 
 router.get(
