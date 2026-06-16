@@ -5,33 +5,32 @@ export const requireRole = (...rolesPermitidos) => {
   return async (req, res, next) => {
     try {
 
-      console.log("ENTRO A requireRole");
+  const auth = getAuth(req);
 
-      const auth = getAuth(req);
+console.log("USER:", auth.userId);
 
-      console.log("USER:", auth.userId);
+if (!auth?.userId) {
+  return res.status(401).json({
+    ok: false,
+    mensaje: "No autenticado",
+  });
+}
+
+const usuario = await Usuario.findOne({
+  clerkId: auth.userId,
+});
+
+console.log("USUARIO ENCONTRADO:", usuario);
+
+if (!usuario) {
+  return res.status(404).json({
+    ok: false,
+    mensaje: "Usuario no encontrado",
+  });
+}
+
 console.log("ROLES:", usuario.roles);
 console.log("PERMITIDOS:", rolesPermitidos);
-
-      if (!auth?.userId) {
-        return res.status(401).json({
-          ok: false,
-          mensaje: "No autenticado",
-        });
-      }
-
-      const usuario = await Usuario.findOne({
-        clerkId: auth.userId,
-      });
-
-      console.log("USUARIO ENCONTRADO:", usuario);
-
-      if (!usuario) {
-        return res.status(404).json({
-          ok: false,
-          mensaje: "Usuario no encontrado",
-        });
-      }
 
       const tienePermiso = usuario.roles.some(
         rol => rolesPermitidos.includes(rol)

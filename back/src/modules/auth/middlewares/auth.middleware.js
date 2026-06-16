@@ -43,8 +43,9 @@ const authMiddleware =
       }
 
       req.clerkAuth = auth;
-req.user = usuario;git
-      next();
+req.user = usuario;
+
+return next();
 
     } catch (error) {
 
