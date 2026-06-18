@@ -30,8 +30,14 @@ from "./modules/admin/routes/admin.routes.js";
 import analyticsRoutes
 from "./modules/analytics/routes/analytics.routes.js";
 
+
+import adminAnalyticsRoutes
+from "./modules/adminAnalytics/routes/analytics.routes.js";
+
 import notificacionRoutes
 from "./modules/notificaciones/routes/notificacion.routes.js";
+
+
 
 const app = express();
 
@@ -86,6 +92,11 @@ app.use(
 );
 
 app.use(
+  "/api/adminAnalytics",
+  adminAnalyticsRoutes
+);
+
+app.use(
   "/api/notificaciones",
   notificacionRoutes
 );
@@ -106,3 +117,8 @@ app.get("/", (req, res) => {
 });
 
 export default app;
+
+app.use(
+  "/api/reportes",
+  reporteRoutes
+);
