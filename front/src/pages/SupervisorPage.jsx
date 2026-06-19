@@ -1,39 +1,43 @@
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { icons } from "../assets/icons/icons.js";
-import ReporteCard from "../components/Report/ReporteCard.jsx";
 import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
+import FiltrosTabla from "../components/Panel/FiltrosTabla.jsx";
 import PanelLayout from "../components/Panel/PanelLayout.jsx";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import BarrasCategoria from "../components/Panel/BarrasCategoria.jsx";
 import StatCard from "../components/Panel/StatCard.jsx";
 import ActividadReciente from "../components/Panel/ActividadReciente.jsx";
-import ReporteHeader from "../components/Report/ReporteHeader.jsx";
+import PageHeader from "../components/Panel/PageHeader.jsx";
 import {
   obtenerReportesPendientes,
   aprobarReporte,
   rechazarReporte,
   cambiarCategoria,
   cambiarPrioridad,
-  obtenerDetalleReporte,
 } from "../services/supervisorService";
 
 const CATEGORIAS = ["baches", "inundacion", "alumbrado", "semaforo", "residuos"];
 const PRIORIDADES = ["low", "medium", "high", "critical"];
 
 const PRIORIDAD_CONFIG = {
-  low:      { label: "Baja",    color: "#888780", bg: "#88878015" },
-  medium:   { label: "Media",   color: "#378ADD", bg: "#378ADD15" },
-  high:     { label: "Alta",    color: "#BA7517", bg: "#BA751715" },
+  low: { label: "Baja", color: "#888780", bg: "#88878015" },
+  medium: { label: "Media", color: "#378ADD", bg: "#378ADD15" },
+  high: { label: "Alta", color: "#BA7517", bg: "#BA751715" },
   critical: { label: "Crítica", color: "#E24B4A", bg: "#E24B4A15" },
 };
+
+const FILTROS_INICIAL = { categoria: "", prioridad: "", estado: "", fechaDesde: "", fechaHasta: "" };
+
+const formatearFecha = (fecha) =>
+  new Date(fecha).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
 
 function Dashboard({ reportes, user }) {
   const statCards = PRIORIDADES.map((p, i) => ({
     label: PRIORIDAD_CONFIG[p].label,
     value: reportes.filter(r => r.prioridad === p).length,
     color: PRIORIDAD_CONFIG[p].color,
-    bg:    PRIORIDAD_CONFIG[p].bg,
+    bg: PRIORIDAD_CONFIG[p].bg,
     delay: `${i * 100}ms`,
   }));
 
@@ -45,20 +49,149 @@ function Dashboard({ reportes, user }) {
     <div className="flex flex-col gap-6">
       <DashboardSaludo user={user} rol="Supervisor" />
       <div className="grid grid-cols-4 gap-3 md:gap-4">
-        {statCards.map((card) => (
-          <StatCard key={card.label} {...card} />
-        ))}
+        {statCards.map((card) => <StatCard key={card.label} {...card} />)}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <BarrasCategoria reportes={reportes} titulo="Pendientes por categoría" delay="400ms" />
-        <ActividadReciente
-          reportes={recientes}
-          estadoConfig={PRIORIDAD_CONFIG}
-          titulo="Reportes recientes"
-          delay="500ms"
-        />
+        <ActividadReciente reportes={recientes} estadoConfig={PRIORIDAD_CONFIG} titulo="Reportes recientes" delay="500ms" />
       </div>
     </div>
+  );
+}
+
+function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, onCambiarPrioridad, index }) {
+  const [expandido, setExpandido] = useState(false);
+  const [mostrarCats, setMostrarCats] = useState(false);
+  const [mostrarPrios, setMostrarPrios] = useState(false);
+  const prioridad = PRIORIDAD_CONFIG[reporte.prioridad];
+
+  return (
+    <>
+      <tr
+        className={`cursor-pointer hover:bg-gray-50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"} ${expandido ? "bg-blue-50/30" : ""}`}
+        style={{ animation: `fadeInUp 0.3s ease-out ${index * 40}ms both` }}
+        onClick={() => { setExpandido(!expandido); setMostrarCats(false); setMostrarPrios(false); }}
+      >
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            <img src={icons[reporte.categoria]} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
+            <span className="font-medium text-gray-800">{reporte.titulo}</span>
+          </div>
+        </td>
+        <td className="px-4 py-3 text-gray-500 text-xs">{reporte.ubicacion?.direccion ?? "Sin dirección"}</td>
+        <td className="px-4 py-3 capitalize text-gray-500">{reporte.categoria}</td>
+        <td className="px-4 py-3">
+          {prioridad && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={{ background: prioridad.bg, color: prioridad.color }}>
+              {prioridad.label}
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-gray-400 text-xs">{formatearFecha(reporte.createdAt)}</td>
+        <td className="px-4 py-3">
+          <span className={`text-gray-400 transition-transform inline-block ${expandido ? "rotate-90" : ""}`}>→</span>
+        </td>
+      </tr>
+
+      {expandido && (
+        <tr className="bg-blue-50/20">
+          <td colSpan={6} className="px-6 py-4">
+            <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.3s ease-out" }}>
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400 font-medium mb-1">Descripción</p>
+                  <p className="text-sm text-gray-700">{reporte.descripcion}</p>
+                </div>
+                {reporte.usuarioId && (
+                  <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm">
+                    <img
+                      src={reporte.usuarioId.imagenPerfil || "https://via.placeholder.com/32"}
+                      className="w-8 h-8 rounded-full object-cover" alt="usuario"
+                    />
+                    <div>
+                      <p className="text-xs font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
+                      <p className="text-xs text-gray-400 capitalize">{reporte.usuarioId.rol}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {reporte.imagenes?.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {reporte.imagenes.map((img, i) => (
+                    <img key={i} src={img} alt={`img-${i}`}
+                      className="h-24 w-36 object-cover rounded-xl border border-gray-100" />
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMostrarCats(!mostrarCats); setMostrarPrios(false); }}
+                    className="border border-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Categoría: <span className="capitalize font-medium">{reporte.categoria}</span> ▾
+                  </button>
+                  {mostrarCats && (
+                    <div className="absolute top-9 left-0 z-[100] bg-white rounded-2xl shadow-lg p-3 grid grid-cols-3 gap-2 w-56"
+                      onClick={(e) => e.stopPropagation()}>
+                      {CATEGORIAS.map((cat) => (
+                        <button key={cat} onClick={() => { onCambiarCategoria(reporte._id, cat); setMostrarCats(false); }}
+                          className="flex flex-col items-center gap-1 p-2 hover:bg-gray-50 rounded-xl">
+                          <img src={icons[cat]} className="w-7 h-7" alt={cat} />
+                          <span className="text-xs capitalize text-gray-600">{cat}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMostrarPrios(!mostrarPrios); setMostrarCats(false); }}
+                    className="border border-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Prioridad: <span className="font-medium" style={{ color: prioridad?.color }}>{prioridad?.label}</span> ▾
+                  </button>
+                  {mostrarPrios && (
+                    <div className="absolute top-9 left-0 z-[100] bg-white rounded-2xl shadow-lg p-3 grid grid-cols-2 gap-2 w-44"
+                      onClick={(e) => e.stopPropagation()}>
+                      {PRIORIDADES.map((p) => {
+                        const cfg = PRIORIDAD_CONFIG[p];
+                        return (
+                          <button key={p} onClick={() => { onCambiarPrioridad(reporte._id, p); setMostrarPrios(false); }}
+                            className="rounded-xl py-1.5 px-3 text-xs font-medium hover:opacity-80"
+                            style={{ background: cfg.bg, color: cfg.color }}>
+                            {cfg.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="ml-auto flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRechazar(reporte._id); }}
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+                  >
+                    Rechazar
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAprobar(reporte._id); }}
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors"
+                  >
+                    Aprobar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -67,10 +200,8 @@ export default function SupervisorPage() {
   const { user } = useUser();
   const [vistaActiva, setVistaActiva] = useState("dashboard");
   const [reportes, setReportes] = useState([]);
-  const [detalle, setDetalle] = useState(null);
-  const [mostrarCategorias, setMostrarCategorias] = useState(false);
-  const [mostrarPrioridades, setMostrarPrioridades] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [filtros, setFiltros] = useState(FILTROS_INICIAL);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { cargarReportes(); }, []);
@@ -87,176 +218,103 @@ export default function SupervisorPage() {
     }
   };
 
-  const verDetalle = async (reporte) => {
+  const handleAprobar = async (id) => {
     try {
       const token = await getToken({ template: "backend" });
-      const data = await obtenerDetalleReporte(reporte._id, token);
-      setDetalle(data.reporte);
-      setMostrarCategorias(false);
-      setMostrarPrioridades(false);
-    } catch (error) {
-      console.log("Error cargando detalle:", error);
-    }
-  };
-
-  const handleAprobar = async () => {
-    try {
-      const token = await getToken({ template: "backend" });
-      await aprobarReporte(detalle._id, token);
-      setDetalle(null); cargarReportes();
+      await aprobarReporte(id, token);
+      cargarReportes();
     } catch (error) { console.log("Error aprobando:", error); }
   };
 
-  const handleRechazar = async () => {
+  const handleRechazar = async (id) => {
     try {
       const token = await getToken({ template: "backend" });
-      await rechazarReporte(detalle._id, "Rechazado por supervisor", token);
-      setDetalle(null); cargarReportes();
+      await rechazarReporte(id, "Rechazado por supervisor", token);
+      cargarReportes();
     } catch (error) { console.log("Error rechazando:", error); }
   };
 
-  const handleCambiarCategoria = async (categoria) => {
+  const handleCambiarCategoria = async (id, categoria) => {
     try {
       const token = await getToken({ template: "backend" });
-      const data = await cambiarCategoria(detalle._id, categoria, token);
-      setDetalle(data.reporte); setMostrarCategorias(false);
+      await cambiarCategoria(id, categoria, token);
+      cargarReportes();
     } catch (error) { console.log("Error cambiando categoría:", error); }
   };
 
-  const handleCambiarPrioridad = async (prioridad) => {
+  const handleCambiarPrioridad = async (id, prioridad) => {
     try {
       const token = await getToken({ template: "backend" });
-      const data = await cambiarPrioridad(detalle._id, prioridad, token);
-      setDetalle(data.reporte); setMostrarPrioridades(false);
+      await cambiarPrioridad(id, prioridad, token);
+      cargarReportes();
     } catch (error) { console.log("Error cambiando prioridad:", error); }
   };
 
-  const reportesFiltrados = reportes.filter((r) =>
-    r.titulo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    r.categoria?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const reportesFiltrados = reportes.filter((r) => {
+    const textMatch = r.titulo?.toLowerCase().includes(busqueda.toLowerCase())
+      || r.categoria?.toLowerCase().includes(busqueda.toLowerCase())
+      || r.ubicacion?.direccion?.toLowerCase().includes(busqueda.toLowerCase()); const catMatch = !filtros.categoria || r.categoria === filtros.categoria;
+    const prioMatch = !filtros.prioridad || r.prioridad === filtros.prioridad;
+    const fecha = new Date(r.createdAt);
+    const desdeMatch = !filtros.fechaDesde || fecha >= new Date(filtros.fechaDesde);
+    const hastaMatch = !filtros.fechaHasta || fecha <= new Date(filtros.fechaHasta + "T23:59:59");
+    return textMatch && catMatch && prioMatch && desdeMatch && hastaMatch;
+  });
 
   const sidebarItems = [
-    { id: "dashboard",  label: "Dashboard",  count: 0 },
+    { id: "dashboard", label: "Dashboard", count: 0 },
     { id: "pendientes", label: "Pendientes", count: reportes.length },
   ];
-
-  if (detalle) {
-    return (
-      <PanelLayout
-        sidebarTitle="Panel Supervisor"
-        sidebarItems={sidebarItems}
-        vistaActiva={vistaActiva}
-        onVistaChange={(id) => { setDetalle(null); setVistaActiva(id); }}
-        loading={false}
-      >
-        <div className="max-w-lg mx-auto flex flex-col gap-4"
-          style={{ animation: "fadeInUp 0.4s ease-out" }}>
-
-          <button onClick={() => setDetalle(null)}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
-            style={{ animation: "fadeInDown 0.4s ease-out" }}>
-            ← Volver
-          </button>
-
-          <ReporteHeader reporte={detalle} />
-
-          <div className="flex gap-2 relative">
-            <button onClick={() => { setMostrarPrioridades(false); setMostrarCategorias(!mostrarCategorias); }}
-              className="flex-1 border border-gray-200 rounded-full py-2 text-sm text-gray-600 hover:bg-gray-50">
-              Cambiar categoría
-            </button>
-            <button onClick={() => { setMostrarCategorias(false); setMostrarPrioridades(!mostrarPrioridades); }}
-              className="flex-1 border border-gray-200 rounded-full py-2 text-sm text-gray-600 hover:bg-gray-50">
-              Cambiar prioridad
-            </button>
-            {mostrarCategorias && (
-              <div className="absolute top-12 left-0 z-10 bg-white rounded-2xl shadow-lg p-3 grid grid-cols-3 gap-2 w-64">
-                {CATEGORIAS.map((cat) => (
-                  <button key={cat} onClick={() => handleCambiarCategoria(cat)}
-                    className="flex flex-col items-center gap-1 p-2 hover:bg-gray-50 rounded-xl">
-                    <img src={icons[cat]} className="w-8 h-8" alt={cat} />
-                    <span className="text-xs capitalize text-gray-600">{cat}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {mostrarPrioridades && (
-              <div className="absolute top-12 right-0 z-10 bg-white rounded-2xl shadow-lg p-3 grid grid-cols-2 gap-2 w-48">
-                {PRIORIDADES.map((p) => (
-                  <button key={p} onClick={() => handleCambiarPrioridad(p)}
-                    className="border border-gray-200 rounded-xl py-2 px-3 text-xs capitalize hover:bg-gray-50 text-gray-600">
-                    {p}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <p className="text-xs text-gray-400 font-medium mb-2">Descripción</p>
-            <p className="text-sm text-gray-700 leading-relaxed mb-4">{detalle.descripcion}</p>
-            {detalle.imagenes?.length > 0 && (
-              <>
-                <p className="text-xs text-gray-400 font-medium mb-2">Fotos</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {detalle.imagenes.map((img, i) => (
-                    <img key={i} src={img} alt={`imagen-${i}`}
-                      className="w-full h-28 object-cover rounded-xl border border-gray-100" />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={handleRechazar}
-              className="flex-1 py-3 rounded-full text-white text-sm font-semibold bg-red-500 hover:bg-red-600 transition-colors">
-              Rechazar
-            </button>
-            <button onClick={handleAprobar}
-              className="flex-1 py-3 rounded-full text-white text-sm font-semibold bg-green-500 hover:bg-green-600 transition-colors">
-              Aceptar
-            </button>
-          </div>
-        </div>
-      </PanelLayout>
-    );
-  }
 
   return (
     <PanelLayout
       sidebarTitle="Panel Supervisor"
       sidebarItems={sidebarItems}
       vistaActiva={vistaActiva}
-      onVistaChange={setVistaActiva}
+      onVistaChange={(id) => { setBusqueda(""); setFiltros(FILTROS_INICIAL); setVistaActiva(id); }}
       loading={loading}
     >
       {vistaActiva === "dashboard" ? (
         <Dashboard reportes={reportes} user={user} />
       ) : (
         <div className="flex flex-col gap-4">
-          <BuscadorInput
-            value={busqueda}
-            onChange={setBusqueda}
-            placeholder="Buscar reporte..."
+          <PageHeader
+            titulo="Reportes pendientes"
+            subtitulo="Revisá y aprobá los incidentes reportados por los ciudadanos"
           />
+          <BuscadorInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por reporte o calle..." />
+          <FiltrosTabla filtros={filtros} onChange={setFiltros} mostrarEstado={false} />
           {reportesFiltrados.length === 0 ? (
-            <div className="flex items-center justify-center h-40"
-              style={{ animation: "fadeInUp 0.4s ease-out" }}>
+            <div className="flex items-center justify-center h-40">
               <p className="text-sm text-gray-400">No hay incidentes pendientes</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {reportesFiltrados.map((reporte, i) => (
-                <ReporteCard
-                  key={reporte._id}
-                  reporte={reporte}
-                  onClick={() => verDetalle(reporte)}
-                  mostrarEstado={false}
-                  delay={`${i * 60}ms`}
-                />
-              ))}
+            <div className="bg-white rounded-2xl shadow-sm overflow-visible">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Reporte</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Ubicación</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Categoría</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Prioridad</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Fecha</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportesFiltrados.map((reporte, i) => (
+                    <FilaExpandible
+                      key={reporte._id}
+                      reporte={reporte}
+                      index={i}
+                      onAprobar={handleAprobar}
+                      onRechazar={handleRechazar}
+                      onCambiarCategoria={handleCambiarCategoria}
+                      onCambiarPrioridad={handleCambiarPrioridad}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
