@@ -201,14 +201,31 @@ const reporteSchema = new mongoose.Schema(
     */
 
     esDuplicado: {
-      type: Boolean,
-      default: false,
+    type: Boolean,
+    default: false,
     },
 
     reporteDuplicadoDe: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Reporte",
-      default: null,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Reporte",
+    default: null,
+    },
+
+    cantidadConfirmaciones: {
+    type: Number,
+    default: 1,
+    },
+
+    usuariosConfirmaron: [
+    {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Usuario",
+    },
+    ],
+
+    scoreDuplicadoIA: {
+    type: Number,
+    default: 0,
     },
 
     /*

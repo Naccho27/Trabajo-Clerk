@@ -24,12 +24,12 @@ const usuarioSchema = new mongoose.Schema(
       default: "",
     },
 
-    rol: {
-      type: String,
+    roles: {
+      type: [String],
 
       enum: ["ciudadano", "supervisor", "operador", "admin"],
 
-      default: "ciudadano",
+      default: ["ciudadano"],
     },
 
     activo: {

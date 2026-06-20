@@ -1,48 +1,159 @@
 import { useEffect, useState } from "react";
-import { useAuth, useClerk } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import Header from "../components/Navbar/Header";
+import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
+import PageHeader from "../components/Panel/PageHeader.jsx";
+import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
 import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ROLES = ["ciudadano", "supervisor", "operador", "admin"];
 
 const ROL_COLORES = {
-  ciudadano: "bg-gray-100 text-gray-600",
+  ciudadano:  "bg-gray-100 text-gray-600",
   supervisor: "bg-purple-100 text-purple-600",
-  operador: "bg-green-100 text-green-600",
-  admin: "bg-red-100 text-red-600",
+  operador:   "bg-green-100 text-green-600",
+  admin:      "bg-red-100 text-red-600",
 };
 
 const ESTADO_COLORES = {
-  open: "bg-blue-100 text-blue-600",
+  open:        "bg-blue-100 text-blue-600",
   in_progress: "bg-yellow-100 text-yellow-600",
-  resolved: "bg-green-100 text-green-600",
-  rejected: "bg-red-100 text-red-600",
+  resolved:    "bg-green-100 text-green-600",
+  rejected:    "bg-red-100 text-red-600",
 };
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", icon: "📊" },
-  { key: "usuarios", label: "Usuarios", icon: "👥" },
-  { key: "crear", label: "Crear usuario", icon: "➕" },
+  { key: "dashboard", label: "Dashboard" },
+  { key: "usuarios",  label: "Usuarios" },
 ];
+
+const selectClass = "border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 bg-white outline-none focus:border-blue-400 cursor-pointer";
+
+function Sidebar({ seccion, setSeccion }) {
+  return (
+    <div className="fixed top-[56px] left-0 bottom-0 w-52 bg-white border-r border-gray-100 flex flex-col py-4 px-3 z-40">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Panel Admin</p>
+      {NAV_ITEMS.map((item) => (
+        <button
+          key={item.key}
+          onClick={() => setSeccion(item.key)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left mb-1 ${
+            seccion === item.key ? "text-white" : "text-gray-600 hover:bg-gray-100"
+          }`}
+          style={seccion === item.key
+            ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
+            : {}}
+        >
+          <span>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ModalCrearUsuario({ onClose, onSuccess }) {
+  const { getToken } = useAuth();
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
+  const [creandoUsuario, setCreandoUsuario] = useState(false);
+  const [errorCrear, setErrorCrear] = useState("");
+
+  const handleCrear = async () => {
+    setCreandoUsuario(true);
+    setErrorCrear("");
+    try {
+      const token = await getToken({ template: "backend" });
+      await axios.post(
+        `${API_URL}/admin/users`,
+        nuevoUsuario,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      onSuccess();
+      onClose();
+    } catch (error) {
+      setErrorCrear(error.response?.data?.mensaje || "Error al crear usuario");
+    } finally {
+      setCreandoUsuario(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
+        style={{ animation: "fadeInUp 0.3s ease-out" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-gray-800 text-lg">Nuevo usuario</p>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">
+            ✕
+          </button>
+        </div>
+
+        {errorCrear && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{errorCrear}</p>}
+
+        <div className="flex flex-col gap-3">
+          <input type="text" placeholder="Nombre de usuario"
+            value={nuevoUsuario.nombreUsuario}
+            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombreUsuario: e.target.value })}
+            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+          <input type="email" placeholder="Email"
+            value={nuevoUsuario.email}
+            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })}
+            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+          <input type="password" placeholder="Contraseña"
+            value={nuevoUsuario.password}
+            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })}
+            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+          <select value={nuevoUsuario.rol}
+            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
+            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
+            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">
+            Cancelar
+          </button>
+          <button onClick={handleCrear} disabled={creandoUsuario}
+            className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
+            {creandoUsuario ? "Creando..." : "Crear"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const { getToken } = useAuth();
-  const { signOut } = useClerk();
+  const { user } = useUser();
   const navigate = useNavigate();
 
   const [seccion, setSeccion] = useState("dashboard");
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const [filtrosUsuarios, setFiltrosUsuarios] = useState({ rol: "", activo: "" });
   const [cambiandoRol, setCambiandoRol] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [perfilUsuario, setPerfilUsuario] = useState(null);
   const [reportesUsuario, setReportesUsuario] = useState([]);
   const [loadingReportes, setLoadingReportes] = useState(false);
+  const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
 
   const [estadoData, setEstadoData] = useState([]);
   const [categoriaData, setCategoriaData] = useState([]);
@@ -50,12 +161,13 @@ export default function AdminPage() {
   const [porcentaje, setPorcentaje] = useState(null);
   const [tiempoPromedio, setTiempoPromedio] = useState(null);
 
-  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
-  const [creandoUsuario, setCreandoUsuario] = useState(false);
-  const [errorCrear, setErrorCrear] = useState("");
-  const [exitoCrear, setExitoCrear] = useState("");
-
   useEffect(() => { cargarTodo(); }, []);
+
+  useEffect(() => {
+    const handleClickFuera = () => setCambiandoRol(null);
+    document.addEventListener("click", handleClickFuera);
+    return () => document.removeEventListener("click", handleClickFuera);
+  }, []);
 
   const cargarTodo = async () => {
     await Promise.all([cargarUsuarios(), cargarAnalytics()]);
@@ -97,9 +209,7 @@ export default function AdminPage() {
       const token = await getToken({ template: "backend" });
       await bloquearUsuario(id, token);
       cargarUsuarios();
-    } catch (error) {
-      console.log("Error bloqueando:", error);
-    }
+    } catch (error) { console.log("Error bloqueando:", error); }
   };
 
   const handleDesbloquear = async (id) => {
@@ -107,9 +217,7 @@ export default function AdminPage() {
       const token = await getToken({ template: "backend" });
       await desbloquearUsuario(id, token);
       cargarUsuarios();
-    } catch (error) {
-      console.log("Error desbloqueando:", error);
-    }
+    } catch (error) { console.log("Error desbloqueando:", error); }
   };
 
   const handleCambiarRol = async (id, nuevoRol) => {
@@ -122,9 +230,7 @@ export default function AdminPage() {
       );
       setCambiandoRol(null);
       cargarUsuarios();
-    } catch (error) {
-      console.log("Error cambiando rol:", error);
-    }
+    } catch (error) { console.log("Error cambiando rol:", error); }
   };
 
   const verPerfil = async (usuario) => {
@@ -143,41 +249,24 @@ export default function AdminPage() {
     }
   };
 
-  const handleCrearUsuario = async (e) => {
-    e.preventDefault();
-    setCreandoUsuario(true);
-    setErrorCrear("");
-    setExitoCrear("");
-    try {
-      const token = await getToken({ template: "backend" });
-      await axios.post(
-        `${API_URL}/admin/users`,
-        nuevoUsuario,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setExitoCrear("Usuario creado correctamente.");
-      setNuevoUsuario({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
-      cargarUsuarios();
-    } catch (error) {
-      setErrorCrear(error.response?.data?.mensaje || "Error al crear usuario");
-    } finally {
-      setCreandoUsuario(false);
-    }
-  };
-
-  const usuariosFiltrados = usuarios.filter((u) =>
-    u.nombreUsuario?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    u.email?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const usuariosFiltrados = usuarios.filter((u) => {
+    const textMatch = u.nombreUsuario?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      u.email?.toLowerCase().includes(busqueda.toLowerCase());
+    const rolMatch = !filtrosUsuarios.rol || u.rol === filtrosUsuarios.rol;
+    const activoMatch = filtrosUsuarios.activo === "" ||
+      (filtrosUsuarios.activo === "activo" ? u.activo === true : u.activo === false);
+    return textMatch && rolMatch && activoMatch;
+  });
 
   // VISTA PERFIL
   if (perfilUsuario) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Topbar signOut={signOut} navigate={navigate} />
-        <div className="flex flex-1 pt-14">
+      <div className="w-screen h-screen flex flex-col bg-gray-50">
+        <Header />
+        <div className="flex flex-1 overflow-hidden pt-[56px]">
           <Sidebar seccion={seccion} setSeccion={(s) => { setSeccion(s); setPerfilUsuario(null); }} />
-          <div className="flex-1 ml-56 px-8 py-6 flex flex-col gap-4">
+          <div className="flex-1 ml-52 overflow-y-auto px-8 py-6 flex flex-col gap-4"
+            style={{ animation: "fadeInUp 0.4s ease-out" }}>
             <button onClick={() => setPerfilUsuario(null)}
               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit">
               ← Volver
@@ -198,9 +287,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-
             <p className="font-semibold text-gray-700">Reportes del usuario ({reportesUsuario.length})</p>
-
             {loadingReportes ? (
               <p className="text-gray-400 text-sm">Cargando reportes...</p>
             ) : reportesUsuario.length === 0 ? (
@@ -240,121 +327,151 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Topbar signOut={signOut} navigate={navigate} />
-      <div className="flex flex-1 pt-14">
+    <div className="w-screen h-screen flex flex-col bg-gray-50">
+      <Header />
 
-        {/* SIDEBAR */}
+      {mostrarModalCrear && (
+        <ModalCrearUsuario
+          onClose={() => setMostrarModalCrear(false)}
+          onSuccess={cargarUsuarios}
+        />
+      )}
+
+      {cambiandoRol && (
+        <div
+          className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-32"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {ROLES.map((r) => (
+            <button key={r} onClick={() => handleCambiarRol(cambiandoRol, r)}
+              className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 font-medium ${ROL_COLORES[r]}`}>
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden pt-[56px]">
         <Sidebar seccion={seccion} setSeccion={setSeccion} />
 
-        {/* CONTENIDO PRINCIPAL */}
-        <div className="flex-1 ml-56 px-8 py-6">
+        <div className="flex-1 ml-52 overflow-y-auto px-8 py-6">
 
           {/* DASHBOARD */}
           {seccion === "dashboard" && (
             <div className="flex flex-col gap-6">
+              <DashboardSaludo user={user} rol="Admin" />
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white rounded-2xl shadow-sm p-5">
-                  <p className="text-sm text-gray-400 mb-1">Total usuarios</p>
-                  <p className="text-3xl font-bold text-gray-800">{usuarios.length}</p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm p-5">
-                  <p className="text-sm text-gray-400 mb-1">% Resueltos</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—"}
-                  </p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm p-5">
-                  <p className="text-sm text-gray-400 mb-1">Tiempo promedio resolución</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—"}
-                  </p>
-                </div>
+                {[
+                  { label: "Total usuarios",             value: usuarios.length, color: "text-gray-800", delay: "0ms" },
+                  { label: "% Resueltos",                value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600", delay: "100ms" },
+                  { label: "Tiempo promedio resolución", value: tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
+                ].map((card) => (
+                  <div key={card.label} className="bg-white rounded-2xl shadow-sm p-5"
+                    style={{ animation: `fadeInUp 0.5s ease-out ${card.delay} both` }}>
+                    <p className="text-sm text-gray-400 mb-1">{card.label}</p>
+                    <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+                  </div>
+                ))}
               </div>
-
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 border-b border-gray-100">
-                    <p className="font-semibold text-gray-700">Por estado</p>
-                  </div>
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left px-4 py-2 text-gray-400 font-medium">Estado</th>
-                        <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {estadoData.map((e, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="px-4 py-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORES[e._id] || "bg-gray-100 text-gray-600"}`}>
-                              {e._id}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-right font-semibold text-gray-700">{e.cantidad}</td>
+                {[
+                  { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
+                  { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
+                  { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
+                ].map(({ titulo, data, colorFn, delay }) => (
+                  <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
+                    style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
+                    <div className="px-5 py-4 border-b border-gray-100">
+                      <p className="font-semibold text-gray-700">{titulo}</p>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
+                          <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 border-b border-gray-100">
-                    <p className="font-semibold text-gray-700">Por categoría</p>
+                      </thead>
+                      <tbody>
+                        {data.map((item, i) => (
+                          <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td className="px-4 py-2">
+                              {colorFn ? (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
+                                  {item._id}
+                                </span>
+                              ) : (
+                                <span className="capitalize text-gray-600">{item._id}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left px-4 py-2 text-gray-400 font-medium">Categoría</th>
-                        <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {categoriaData.map((c, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="px-4 py-2 capitalize text-gray-600">{c._id}</td>
-                          <td className="px-4 py-2 text-right font-semibold text-gray-700">{c.cantidad}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 border-b border-gray-100">
-                    <p className="font-semibold text-gray-700">Por prioridad</p>
-                  </div>
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left px-4 py-2 text-gray-400 font-medium">Prioridad</th>
-                        <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {prioridadData.map((p, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="px-4 py-2 capitalize text-gray-600">{p._id}</td>
-                          <td className="px-4 py-2 text-right font-semibold text-gray-700">{p.cantidad}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                ))}
               </div>
             </div>
           )}
 
           {/* USUARIOS */}
           {seccion === "usuarios" && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 bg-white w-full max-w-sm">
-                <span className="text-gray-400 text-sm">🔍</span>
-                <input type="text" placeholder="Buscar usuario..."
-                  value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-                  className="outline-none text-sm w-full bg-transparent" />
+            <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.4s ease-out" }}>
+
+              {/* Header con botón */}
+              <div className="flex items-start justify-between">
+                <PageHeader
+                  titulo="Usuarios"
+                  subtitulo="Gestioná los roles y el acceso de los usuarios del sistema"
+                />
+                <button
+                  onClick={() => setMostrarModalCrear(true)}
+                  className="text-white text-sm font-semibold px-4 py-2 rounded-full shrink-0"
+                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+                >
+                  + Nuevo usuario
+                </button>
               </div>
+
+              {/* Filtros */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <BuscadorInput
+                    value={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar usuario..."
+                  />
+                </div>
+                <select
+                  value={filtrosUsuarios.rol}
+                  onChange={(e) => setFiltrosUsuarios({ ...filtrosUsuarios, rol: e.target.value })}
+                  className={selectClass}
+                >
+                  <option value="">Todos los roles</option>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                  ))}
+                </select>
+                <select
+                  value={filtrosUsuarios.activo}
+                  onChange={(e) => setFiltrosUsuarios({ ...filtrosUsuarios, activo: e.target.value })}
+                  className={selectClass}
+                >
+                  <option value="">Todos los estados</option>
+                  <option value="activo">Activo</option>
+                  <option value="bloqueado">Bloqueado</option>
+                </select>
+                {(filtrosUsuarios.rol || filtrosUsuarios.activo || busqueda) && (
+                  <button
+                    onClick={() => { setFiltrosUsuarios({ rol: "", activo: "" }); setBusqueda(""); }}
+                    className="text-xs text-red-400 hover:text-red-600 px-2"
+                  >
+                    Limpiar filtros ✕
+                  </button>
+                )}
+              </div>
+
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
@@ -371,160 +488,60 @@ export default function AdminPage() {
                       <tr><td colSpan={5} className="text-center py-8 text-gray-400">Cargando...</td></tr>
                     ) : usuariosFiltrados.length === 0 ? (
                       <tr><td colSpan={5} className="text-center py-8 text-gray-400">No hay usuarios</td></tr>
-                    ) : (
-                      usuariosFiltrados.map((usuario, i) => (
-                        <tr key={usuario._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <img src={usuario.imagenPerfil || "https://via.placeholder.com/32"}
-                                alt="perfil"
-                                className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80"
-                                onClick={() => verPerfil(usuario)} />
-                              <span className="font-medium text-gray-800">{usuario.nombreUsuario}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">{usuario.email}</td>
-                          <td className="px-4 py-3">
-                            <div className="relative">
-                              <button onClick={() => setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id)}
-                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}>
-                                {usuario.rol} ▾
-                              </button>
-                              {cambiandoRol === usuario._id && (
-                                <div className="absolute top-6 left-0 z-10 bg-white rounded-xl shadow-lg p-2 flex flex-col gap-1 w-32">
-                                  {ROLES.map((r) => (
-                                    <button key={r} onClick={() => handleCambiarRol(usuario._id, r)}
-                                      className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 font-medium ${ROL_COLORES[r]}`}>
-                                      {r}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${usuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
-                              {usuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            {usuario.activo ? (
-                              <button onClick={() => handleBloquear(usuario._id)}
-                                className="text-xs border border-red-200 text-red-500 rounded-full px-3 py-1 hover:bg-red-50">
-                                Bloquear
-                              </button>
-                            ) : (
-                              <button onClick={() => handleDesbloquear(usuario._id)}
-                                className="text-xs border border-green-200 text-green-500 rounded-full px-3 py-1 hover:bg-green-50">
-                                Desbloquear
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ) : usuariosFiltrados.map((usuario, i) => (
+                      <tr key={usuario._id}
+                        className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                        style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <img src={usuario.imagenPerfil || "https://via.placeholder.com/32"}
+                              alt="perfil"
+                              className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80"
+                              onClick={() => verPerfil(usuario)} />
+                            <span className="font-medium text-gray-800">{usuario.nombreUsuario}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">{usuario.email}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+                              setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id);
+                            }}
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}
+                          >
+                            {usuario.rol} ▾
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${usuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                            {usuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {usuario.activo ? (
+                            <button onClick={() => handleBloquear(usuario._id)}
+                              className="text-xs border border-red-200 text-red-500 rounded-full px-3 py-1 hover:bg-red-50">
+                              Bloquear
+                            </button>
+                          ) : (
+                            <button onClick={() => handleDesbloquear(usuario._id)}
+                              className="text-xs border border-green-200 text-green-500 rounded-full px-3 py-1 hover:bg-green-50">
+                              Desbloquear
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
-
-          {/* CREAR USUARIO */}
-          {seccion === "crear" && (
-            <div className="max-w-md">
-              <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4">
-                <p className="font-semibold text-gray-700 text-lg">Crear nuevo usuario</p>
-                {errorCrear && <p className="text-red-500 text-sm bg-red-50 rounded-lg p-2">{errorCrear}</p>}
-                {exitoCrear && <p className="text-green-600 text-sm bg-green-50 rounded-lg p-2">{exitoCrear}</p>}
-                <div className="flex flex-col gap-3">
-                  <input type="text" placeholder="Nombre de usuario"
-                    value={nuevoUsuario.nombreUsuario}
-                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombreUsuario: e.target.value })}
-                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400" />
-                  <input type="email" placeholder="Email"
-                    value={nuevoUsuario.email}
-                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })}
-                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400" />
-                  <input type="password" placeholder="Contraseña"
-                    value={nuevoUsuario.password}
-                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })}
-                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400" />
-                  <select value={nuevoUsuario.rol}
-                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
-                    className="border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400 bg-white">
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                  <button onClick={handleCrearUsuario} disabled={creandoUsuario}
-                    className="bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-full py-2 text-sm transition-colors disabled:opacity-60">
-                    {creandoUsuario ? "Creando..." : "Crear usuario"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function Topbar({ signOut, navigate }) {
-  const location = window.location.pathname;
-
-  const btnStyle = (path) => {
-    const isActive = location === path;
-    return {
-      background: isActive ? "linear-gradient(to bottom right, #ff4444, #e91e8c, #9c27b0, #3b82f6)" : "transparent",
-    };
-  };
-
-  const btnClass = (path) => {
-    const isActive = location === path;
-    return `text-sm font-semibold px-4 py-1.5 rounded-full transition-all ${
-      isActive ? "text-white" : "text-gray-500 hover:bg-gray-100"
-    }`;
-  };
-
-  return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between shadow-sm h-14">
-      <h1 className="text-xl font-bold">Urban<span className="text-blue-500">Log</span></h1>
-      <div className="flex items-center gap-2">
-        <button onClick={() => navigate("/admin")} className={btnClass("/admin")} style={btnStyle("/admin")}>
-          Admin
-        </button>
-        <button onClick={() => navigate("/supervisor")} className={btnClass("/supervisor")} style={btnStyle("/supervisor")}>
-          Supervisor
-        </button>
-        <button onClick={() => navigate("/operador")} className={btnClass("/operador")} style={btnStyle("/operador")}>
-          Operador
-        </button>
-        <button onClick={() => navigate("/mapa")} className={btnClass("/mapa")} style={btnStyle("/mapa")}>
-          Mapa
-        </button>
-        <div className="w-px h-4 bg-gray-200 mx-1" />
-        <button onClick={() => signOut(() => window.location.href = "/login")}
-          className="text-xs text-gray-500 hover:text-red-500 transition-colors">
-          Cerrar Sesion 🔓
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Sidebar({ seccion, setSeccion }) {
-  return (
-    <div className="fixed top-14 left-0 bottom-0 w-56 bg-white border-r border-gray-100 flex flex-col py-4 px-3 z-40">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Panel</p>
-      {NAV_ITEMS.map((item) => (
-        <button key={item.key} onClick={() => setSeccion(item.key)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left mb-1 ${seccion === item.key ? "text-white" : "text-gray-600 hover:bg-gray-100"}`}
-          style={seccion === item.key ? { background: "linear-gradient(to bottom right, #ff4444, #e91e8c, #9c27b0, #3b82f6)" } : {}}>
-          <span>{item.icon}</span>
-          <span>{item.label}</span>
-        </button>
-      ))}
     </div>
   );
 }

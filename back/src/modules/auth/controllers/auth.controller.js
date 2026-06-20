@@ -47,7 +47,7 @@ export const sincronizarUsuario =
 
             imagenPerfil,
 
-            rol: "ciudadano"
+            roles: ["ciudadano"]
           });
       }
 

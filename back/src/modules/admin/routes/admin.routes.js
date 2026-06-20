@@ -1,31 +1,81 @@
-import { Router } from "express";
+import { Router }
+from "express";
 
-import authMiddleware from "../../auth/middlewares/auth.middleware.js";
+import authMiddleware
+from "../../auth/middlewares/auth.middleware.js";
 
-import { requireRole } from "../../../shared/middlewares/requireRole.js";
+import { requireRole }
+from "../../../shared/middlewares/requireRole.js";
 
-import { validate } from "../../../shared/middlewares/validate.middleware.js";
+import { validate }
+from "../../../shared/middlewares/validate.middleware.js";
 
 import {
+
   getUsers,
+
   changeUserRole,
+
   blockUser,
-  unblockUser,
-  createUser
+
+  unblockUser
+
 } from "../controllers/admin.controller.js";
 
-import { roleSchema } from "../validators/admin.validator.js";
+import {
+  roleSchema
+} from "../validators/admin.validator.js";
 
 const router = Router();
 
-router.get("/users", getUsers);
+/*
+|--------------------------------------------------------------
+| Obtener usuarios
+|--------------------------------------------------------------
+*/
 
-router.patch("/users/:id/role", validate(roleSchema), changeUserRole);
+router.get(
+  "/users",
 
-router.patch("/users/:id/block", blockUser);
+  getUsers
+);
 
-router.patch("/users/:id/unblock", unblockUser);
+/*
+|--------------------------------------------------------------
+| Cambiar rol
+|--------------------------------------------------------------
+*/
 
-router.post("/users", createUser);
+router.patch(
+  "/users/:id/role",
+
+  validate(roleSchema),
+
+  changeUserRole
+);
+
+/*
+|--------------------------------------------------------------
+| Bloquear usuario
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/users/:id/block",
+
+  blockUser
+);
+
+/*
+|--------------------------------------------------------------
+| Desbloquear usuario
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/users/:id/unblock",
+
+  unblockUser
+);
 
 export default router;
