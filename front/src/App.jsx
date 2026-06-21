@@ -14,13 +14,9 @@ function App() {
   useEffect(() => {
     const sincronizarUsuario = async () => {
       try {
-        if (!isLoaded) {
-          console.log("CLERK NO CARGADO");
-          return;
-        }
+        if (!isLoaded) return;
 
         if (!isSignedIn || !user) {
-          console.log("NO HAY USER");
           setSyncListo(true);
           return;
         }
@@ -42,11 +38,9 @@ function App() {
         );
 
         setUsuarioBD(data.usuario);
-        console.log("USUARIO SINCRONIZADO", data.usuario.rol);
+        console.log("USUARIO SINCRONIZADO", data.usuario.roles); // 👈
 
-        // verificar si está bloqueado
         if (data.usuario.activo === false) {
-          console.log("USUARIO BLOQUEADO");
           await signOut();
           window.location.href = "/login?bloqueado=true";
           return;
@@ -55,8 +49,7 @@ function App() {
         setSyncListo(true);
 
       } catch (error) {
-        console.log("ERROR SYNC:");
-        console.log(error);
+        console.log("ERROR SYNC:", error);
         console.log(error.response?.data);
         setSyncListo(true);
       }

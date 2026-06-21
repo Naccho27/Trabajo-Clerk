@@ -4,11 +4,20 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SignOutButton from "../Buttons/SignOutButton";
 import { useUsuarioBD } from "../../context/UserContext";
 
-const NAV_POR_ROL = {
-  ciudadano: [{ label: "Ciudadano", path: "/mapa" }],
-  operador: [{ label: "Operador", path: "/operador" }, { label: "Ciudadano", path: "/mapa" }],
-  supervisor: [{ label: "Supervisor", path: "/supervisor" }, { label: "Ciudadano", path: "/mapa" }],
-  admin: [{ label: "Admin", path: "/admin" }, { label: "Supervisor", path: "/supervisor" }, { label: "Operador", path: "/operador" }, { label: "Ciudadano", path: "/mapa" }],
+const ITEMS_POR_ROL = {
+  admin:      { label: "Admin",      path: "/admin" },
+  supervisor: { label: "Supervisor", path: "/supervisor" },
+  operador:   { label: "Operador",   path: "/operador" },
+  ciudadano:  { label: "Ciudadano",  path: "/mapa" },
+};
+
+const ORDEN = ["admin", "supervisor", "operador", "ciudadano"];
+
+const ACCESO_POR_ROL = {
+  admin:      ["admin", "supervisor", "operador", "ciudadano"],
+  supervisor: ["supervisor", "ciudadano"],
+  operador:   ["operador", "ciudadano"],
+  ciudadano:  ["ciudadano"],
 };
 
 export default function Header() {
@@ -18,7 +27,9 @@ export default function Header() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const navItems = NAV_POR_ROL[usuarioBD?.rol] ?? [];
+  const roles = usuarioBD?.roles ?? ["ciudadano"];
+  const rolPrincipal = ORDEN.find(r => roles.includes(r)) ?? "ciudadano";
+  const navItems = ACCESO_POR_ROL[rolPrincipal].map(r => ITEMS_POR_ROL[r]);
   const multipleItems = isSignedIn && navItems.length > 1;
 
   return (
@@ -29,17 +40,17 @@ export default function Header() {
         </h1>
 
         <div className="flex items-center gap-2">
-          {/* Desktop: botones normales */}
           {multipleItems && (
             <div className="hidden md:flex items-center gap-2">
               {navItems.map((item) => (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-all ${location.pathname === item.path
+                  className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                    location.pathname === item.path
                       ? "border-transparent text-white"
                       : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                    }`}
+                  }`}
                   style={location.pathname === item.path
                     ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
                     : {}}
@@ -50,7 +61,6 @@ export default function Header() {
             </div>
           )}
 
-          {/* Mobile: hamburguesa — solo si hay más de 1 item */}
           {multipleItems && (
             <button
               onClick={() => setMenuOpen(!menuOpen)}
@@ -75,17 +85,17 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Dropdown mobile */}
       {menuOpen && multipleItems && (
         <div className="absolute top-[56px] right-2 z-[1002] md:hidden bg-white shadow-xl rounded-2xl w-44 py-3 px-3 flex flex-col gap-1">
           {navItems.map((item) => (
             <button
               key={item.path}
               onClick={() => { navigate(item.path); setMenuOpen(false); }}
-              className={`text-left w-full text-sm px-3 py-2 rounded-xl transition-all ${location.pathname === item.path
+              className={`text-left w-full text-sm px-3 py-2 rounded-xl transition-all ${
+                location.pathname === item.path
                   ? "text-white font-semibold"
                   : "text-gray-600 hover:bg-gray-50"
-                }`}
+              }`}
               style={location.pathname === item.path
                 ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
                 : {}}

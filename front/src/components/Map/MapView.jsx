@@ -12,12 +12,12 @@ import HeatmapLayer from "./HeatmapLayer";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const iconos = {
-  baches: new L.Icon({ iconUrl: icons.baches, iconSize: [35, 35] }),
-  residuos: new L.Icon({ iconUrl: icons.residuos, iconSize: [35, 35] }),
+  baches:    new L.Icon({ iconUrl: icons.baches,    iconSize: [35, 35] }),
+  residuos:  new L.Icon({ iconUrl: icons.residuos,  iconSize: [35, 35] }),
   alumbrado: new L.Icon({ iconUrl: icons.alumbrado, iconSize: [35, 35] }),
-  semaforo: new L.Icon({ iconUrl: icons.semaforo, iconSize: [35, 35] }),
-  inundacion: new L.Icon({ iconUrl: icons.inundacion, iconSize: [35, 35] }),
-  todos: new L.Icon({ iconUrl: icons.todos, iconSize: [35, 35] }),
+  semaforo:  new L.Icon({ iconUrl: icons.semaforo,  iconSize: [35, 35] }),
+  inundacion:new L.Icon({ iconUrl: icons.inundacion,iconSize: [35, 35] }),
+  todos:     new L.Icon({ iconUrl: icons.todos,     iconSize: [35, 35] }),
 };
 
 const VILLA_MARIA = [-32.4149, -63.2386];
@@ -77,7 +77,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
       : reportes.filter((r) => r.categoria === filtro);
 
   const reportesVisibles = reportesFiltrados.filter(
-    (r) => r.estado === "in_progress"
+    (r) => r.estado === "in_progress" && r.esDuplicado === false
   );
 
   const markers = useMemo(() => (
@@ -96,6 +96,11 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
                 <span className="text-xs text-gray-400 capitalize">{reporte.categoria}</span>
               </div>
               <h3 className="font-bold text-sm leading-tight">{reporte.titulo}</h3>
+              {reporte.cantidadConfirmaciones > 1 && (
+                <span className="text-xs font-medium text-orange-500">
+                  🔁 {reporte.cantidadConfirmaciones} personas reportaron esto
+                </span>
+              )}
               <span className="text-xs text-gray-400">
                 {new Date(reporte.createdAt).toLocaleDateString("es-AR")}
               </span>
@@ -110,7 +115,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
           </Popup>
         </Marker>
       ))
-  ), [reportesVisibles, selectedReporteId]);
+  ), [reportesVisibles]);
 
   if (loading) {
     return (

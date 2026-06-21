@@ -6,7 +6,7 @@ import {
   detectDuplicateIncident,
   prioritizeIncident
 }
-from "../../../shared/services/ai.service.js";
+  from "../../../shared/services/ai.service.js";
 
 /*
 |------------------------------------------------------------------
@@ -15,44 +15,44 @@ from "../../../shared/services/ai.service.js";
 */
 
 const calcularDistanciaMetros =
-(
-  lat1,
-  lng1,
-  lat2,
-  lng2
-) => {
+  (
+    lat1,
+    lng1,
+    lat2,
+    lng2
+  ) => {
 
-  const R = 6371000;
+    const R = 6371000;
 
-  const dLat =
-    (lat2 - lat1)
-    * Math.PI / 180;
+    const dLat =
+      (lat2 - lat1)
+      * Math.PI / 180;
 
-  const dLng =
-    (lng2 - lng1)
-    * Math.PI / 180;
+    const dLng =
+      (lng2 - lng1)
+      * Math.PI / 180;
 
-  const a =
-    Math.sin(dLat / 2) *
-    Math.sin(dLat / 2)
-    +
-    Math.cos(lat1 * Math.PI / 180)
-    *
-    Math.cos(lat2 * Math.PI / 180)
-    *
-    Math.sin(dLng / 2)
-    *
-    Math.sin(dLng / 2);
+    const a =
+      Math.sin(dLat / 2) *
+      Math.sin(dLat / 2)
+      +
+      Math.cos(lat1 * Math.PI / 180)
+      *
+      Math.cos(lat2 * Math.PI / 180)
+      *
+      Math.sin(dLng / 2)
+      *
+      Math.sin(dLng / 2);
 
-  const c =
-    2 * Math.atan2(
-      Math.sqrt(a),
-      Math.sqrt(1 - a)
-    );
+    const c =
+      2 * Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1 - a)
+      );
 
-  return R * c;
+    return R * c;
 
-};
+  };
 
 /*
 |------------------------------------------------------------------
@@ -68,57 +68,37 @@ export const crearReporteService =
     let prioridadIA = "medium";
     let scorePrioridadIA = 0;
 
-    let descripcionNormalizada =
-      datos.descripcion;
+    let descripcionNormalizada = datos.descripcion;
+    let tituloNormalizado = datos.titulo;
+    let categoriaFinal = datos.categoria;
 
     try {
 
-      descripcionNormalizada =
-        await normalizeIncident(
-          datos.descripcion
-        );
+      descripcionNormalizada = await normalizeIncident(datos.descripcion);
+      tituloNormalizado = await normalizeIncident(datos.titulo);
 
-      const clasificacion =
-        await classifyIncident(
-
-          `${datos.titulo}
-          ${descripcionNormalizada}`
-
-        );
-
-      categoriaIA =
-        clasificacion.categoria;
-
-      scoreCategoriaIA =
-        clasificacion.confianza;
-
-        const prioridadCalculada =
-        await prioritizeIncident({
-
-        titulo:
-        datos.titulo,
-
-        descripcion:
-        descripcionNormalizada,
-
-        categoria:
-        categoriaIA
-
-      });
-
-        prioridadIA =
-       prioridadCalculada.prioridad;
-
-        scorePrioridadIA =
-       prioridadCalculada.confianza;
-    
-      } catch (error) {
-
-      console.error(
-        "Error IA:",
-        error.message
+      const clasificacion = await classifyIncident(
+        `${tituloNormalizado} ${descripcionNormalizada}`
       );
 
+      categoriaIA = clasificacion.categoria;
+      scoreCategoriaIA = clasificacion.confianza;
+
+      if (categoriaIA && scoreCategoriaIA >= 0.8) {
+        categoriaFinal = categoriaIA;
+      }
+
+      const prioridadCalculada = await prioritizeIncident({
+        titulo: tituloNormalizado,
+        descripcion: descripcionNormalizada,
+        categoria: categoriaFinal,
+      });
+
+      prioridadIA = prioridadCalculada.prioridad;
+      scorePrioridadIA = prioridadCalculada.confianza;
+
+    } catch (error) {
+      console.error("Error IA:", error.message);
     }
 
     /*
@@ -127,57 +107,27 @@ export const crearReporteService =
     |--------------------------------------------------------
     */
 
-    const reportesRecientes =
-      await Reporte.find({
+    const reportesRecientes = await Reporte.find({
+      esDuplicado: false,
+      createdAt: {
+        $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      },
+      estado: { $ne: "rejected" }
+    });
 
-        esDuplicado: false,
+    const candidatos = reportesRecientes.filter(reporte => {
+      if (!reporte.ubicacion?.lat || !reporte.ubicacion?.lng) return false;
+      if (!datos.ubicacion?.lat || !datos.ubicacion?.lng) return false;
 
-        createdAt: {
-          $gte: new Date(
-            Date.now()
-            - 30 * 24 * 60 * 60 * 1000
-          )
-        },
-
-        estado: {
-          $ne: "rejected"
-        }
-
-      });
-
-    const candidatos =
-      reportesRecientes.filter(
-        reporte => {
-
-          if (
-            !reporte.ubicacion?.lat ||
-            !reporte.ubicacion?.lng
-          ) {
-            return false;
-          }
-
-          if (
-            !datos.ubicacion?.lat ||
-            !datos.ubicacion?.lng
-          ) {
-            return false;
-          }
-
-          const distancia =
-            calcularDistanciaMetros(
-
-              datos.ubicacion.lat,
-              datos.ubicacion.lng,
-
-              reporte.ubicacion.lat,
-              reporte.ubicacion.lng
-
-            );
-
-          return distancia <= 50;
-
-        }
+      const distancia = calcularDistanciaMetros(
+        datos.ubicacion.lat,
+        datos.ubicacion.lng,
+        reporte.ubicacion.lat,
+        reporte.ubicacion.lng
       );
+
+      return distancia <= 50;
+    });
 
     /*
     |--------------------------------------------------------
@@ -185,12 +135,18 @@ export const crearReporteService =
     |--------------------------------------------------------
     */
 
-    for (
-      const candidato
-      of candidatos
-    ) {
-
+    for (const candidato of candidatos) {
       try {
+
+        // 👇 bloquear si es el mismo usuario
+        if (candidato.usuarioId?.toString() === datos.usuarioId?.toString()) {
+          return {
+            duplicado: true,
+            reporteOriginal: candidato._id,
+            confianza: 1,
+            mensaje: "Ya tenés un reporte similar en esta zona",
+          };
+        }
 
         if (
           candidato.categoriaIA &&
@@ -200,90 +156,43 @@ export const crearReporteService =
           continue;
         }
 
-        const resultado =
-          await detectDuplicateIncident(
+        const resultado = await detectDuplicateIncident(
+          {
+            titulo: tituloNormalizado,
+            descripcion: descripcionNormalizada,
+            categoria: categoriaIA
+          },
+          {
+            titulo: candidato.titulo,
+            descripcion: candidato.descripcion,
+            categoria: candidato.categoriaIA
+          }
+        );
 
-            {
-              titulo:
-                datos.titulo,
+        if (resultado.duplicado) {
+          candidato.scoreDuplicadoIA = resultado.confianza || 0;
 
-              descripcion:
-                descripcionNormalizada,
-
-              categoria:
-                categoriaIA
-            },
-
-            {
-              titulo:
-                candidato.titulo,
-
-              descripcion:
-                candidato.descripcion,
-
-              categoria:
-                candidato.categoriaIA
-            }
-
+          const usuarioYaConfirmo = candidato.usuariosConfirmaron?.some(
+            id => id.toString() === datos.usuarioId?.toString()
           );
 
-        if (
-          resultado.duplicado
-        ) {
-
-          candidato.scoreDuplicadoIA =
-            resultado.confianza || 0;
-
-          const usuarioYaConfirmo =
-            candidato
-              .usuariosConfirmaron
-              ?.some(
-
-                id =>
-                  id.toString()
-                  ===
-                  datos.usuarioId
-                    ?.toString()
-
-              );
-
-          if (
-            !usuarioYaConfirmo
-          ) {
-
+          if (!usuarioYaConfirmo) {
             candidato.cantidadConfirmaciones += 1;
-
-            candidato.usuariosConfirmaron.push(
-              datos.usuarioId
-            );
-
+            candidato.usuariosConfirmaron.push(datos.usuarioId);
           }
 
           await candidato.save();
 
           return {
-
             duplicado: true,
-
-            reporteOriginal:
-              candidato._id,
-
-            confianza:
-              resultado.confianza || 0
-
+            reporteOriginal: candidato._id,
+            confianza: resultado.confianza || 0
           };
-
         }
 
       } catch (error) {
-
-        console.error(
-          "Error verificando duplicado:",
-          error.message
-        );
-
+        console.error("Error verificando duplicado:", error.message);
       }
-
     }
 
     /*
@@ -292,67 +201,37 @@ export const crearReporteService =
     |--------------------------------------------------------
     */
 
-    const nuevoReporte =
-      new Reporte({
-
-        ...datos,
-
-        descripcion:
-          
-        descripcionNormalizada,
-
-          categoriaIA,
-          
-          scoreCategoriaIA,
-          
-          prioridad:
-          prioridadIA,
-          
-          prioridadIA,
-
-          scorePrioridadIA,
-          
-          esDuplicado: false,
-
-          reporteDuplicadoDe:
-          null,
-
-          cantidadConfirmaciones: 1,
-
-          usuariosConfirmaron:
-          
-          datos.usuarioId
-            ? [datos.usuarioId]
-            : [],
-
-          historialEstados: [
-          {
-            estado: "open",
-
-            fechaInicio:
-              new Date(),
-
-            usuarioId:
-              datos.usuarioId,
-          },
-        ],
-
-        historial: [
-          {
-            accion:
-              "creacion",
-
-            valorNuevo:
-              "open",
-
-            realizadoPor:
-              datos.usuarioId,
-          },
-        ],
-      });
+    const nuevoReporte = new Reporte({
+      ...datos,
+      titulo: tituloNormalizado,
+      descripcion: descripcionNormalizada,
+      categoria: categoriaFinal,
+      categoriaIA,
+      scoreCategoriaIA,
+      prioridad: prioridadIA,
+      prioridadIA,
+      scorePrioridadIA,
+      esDuplicado: false,
+      reporteDuplicadoDe: null,
+      cantidadConfirmaciones: 1,
+      usuariosConfirmaron: datos.usuarioId ? [datos.usuarioId] : [],
+      historialEstados: [
+        {
+          estado: "open",
+          fechaInicio: new Date(),
+          usuarioId: datos.usuarioId,
+        },
+      ],
+      historial: [
+        {
+          accion: "creacion",
+          valorNuevo: "open",
+          realizadoPor: datos.usuarioId,
+        },
+      ],
+    });
 
     return await nuevoReporte.save();
-
   };
 
 /*
@@ -381,7 +260,7 @@ export const obtenerMisReportesService =
 export const obtenerReportePorIdService =
   async (id) => {
 
-    return await Reporte.findById(id);
+    return await Reporte.findById(id).populate("usuarioId", "nombreUsuario imagenPerfil roles");
 
   };
 
