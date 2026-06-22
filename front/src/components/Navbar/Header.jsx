@@ -4,28 +4,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SignOutButton from "../Buttons/SignOutButton";
 import { useUsuarioBD } from "../../context/UserContext";
 
-<<<<<<< HEAD
 const LABEL_POR_ROL = {
   ciudadano: { label: "Ciudadano", path: "/mapa" },
   operador: { label: "Operador", path: "/operador" },
   supervisor: { label: "Supervisor", path: "/supervisor" },
   admin: { label: "Admin", path: "/admin" },
-=======
-const ITEMS_POR_ROL = {
-  admin:      { label: "Admin",      path: "/admin" },
-  supervisor: { label: "Supervisor", path: "/supervisor" },
-  operador:   { label: "Operador",   path: "/operador" },
-  ciudadano:  { label: "Ciudadano",  path: "/mapa" },
-};
-
-const ORDEN = ["admin", "supervisor", "operador", "ciudadano"];
-
-const ACCESO_POR_ROL = {
-  admin:      ["admin", "supervisor", "operador", "ciudadano"],
-  supervisor: ["supervisor", "ciudadano"],
-  operador:   ["operador", "ciudadano"],
-  ciudadano:  ["ciudadano"],
->>>>>>> origin/CasauxTobias
 };
 
 // Orden fijo en el que se muestran los botones, sin importar el orden del array roles
@@ -38,7 +21,6 @@ export default function Header() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-<<<<<<< HEAD
   const rolesUsuario = usuarioBD?.roles ?? [];
 
   // Solo se muestran los roles que el usuario REALMENTE tiene
@@ -46,11 +28,6 @@ export default function Header() {
     .filter((rol) => rolesUsuario.includes(rol))
     .map((rol) => LABEL_POR_ROL[rol]);
 
-=======
-  const roles = usuarioBD?.roles ?? ["ciudadano"];
-  const rolPrincipal = ORDEN.find(r => roles.includes(r)) ?? "ciudadano";
-  const navItems = ACCESO_POR_ROL[rolPrincipal].map(r => ITEMS_POR_ROL[r]);
->>>>>>> origin/CasauxTobias
   const multipleItems = isSignedIn && navItems.length > 1;
 
   return (

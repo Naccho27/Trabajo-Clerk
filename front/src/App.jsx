@@ -38,11 +38,7 @@ function App() {
         );
 
         setUsuarioBD(data.usuario);
-<<<<<<< HEAD
-        console.log("USUARIO SINCRONIZADO", data.usuario.roles);
-=======
         console.log("USUARIO SINCRONIZADO", data.usuario.roles); // 👈
->>>>>>> origin/CasauxTobias
 
         if (data.usuario.activo === false) {
           await signOut();
