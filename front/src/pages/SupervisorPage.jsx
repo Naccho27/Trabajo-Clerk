@@ -27,6 +27,8 @@ const PRIORIDAD_CONFIG = {
   critical: { label: "Crítica", color: "#E24B4A", bg: "#E24B4A15" },
 };
 
+const ORDEN_PRIORIDAD = { critical: 0, high: 1, medium: 2, low: 3 };
+
 const FILTROS_INICIAL = { categoria: "", prioridad: "", estado: "", fechaDesde: "", fechaHasta: "" };
 
 const formatearFecha = (fecha) =>
@@ -111,7 +113,7 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                     />
                     <div>
                       <p className="text-xs font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
-                      <p className="text-xs text-gray-400 capitalize">{reporte.usuarioId.rol}</p>
+                      <p className="text-xs text-gray-400 capitalize">{reporte.usuarioId.roles?.join(", ")}</p>
                     </div>
                   </div>
                 )}
@@ -259,7 +261,7 @@ export default function SupervisorPage() {
     const desdeMatch = !filtros.fechaDesde || fecha >= new Date(filtros.fechaDesde);
     const hastaMatch = !filtros.fechaHasta || fecha <= new Date(filtros.fechaHasta + "T23:59:59");
     return textMatch && catMatch && prioMatch && desdeMatch && hastaMatch;
-  });
+  }).sort((a, b) => ORDEN_PRIORIDAD[a.prioridad] - ORDEN_PRIORIDAD[b.prioridad]);
 
   const sidebarItems = [
     { id: "dashboard", label: "Dashboard", count: 0 },

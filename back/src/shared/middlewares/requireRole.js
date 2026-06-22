@@ -28,11 +28,11 @@ export const requireRole = (...rolesPermitidos) => {
         });
       }
 
-      if (
-        !rolesPermitidos.includes(
-          usuario.rol
-        )
-      ) {
+      const tienePermiso = usuario.roles.some(
+        (rol) => rolesPermitidos.includes(rol)
+      );
+
+      if (!tienePermiso) {
 
         return res.status(403).json({
           ok: false,

@@ -42,7 +42,7 @@ function App() {
         );
 
         setUsuarioBD(data.usuario);
-        console.log("USUARIO SINCRONIZADO", data.usuario.rol);
+        console.log("USUARIO SINCRONIZADO", data.usuario.roles);
 
         // verificar si está bloqueado
         if (data.usuario.activo === false) {

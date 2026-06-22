@@ -62,10 +62,11 @@ function RoleRedirect() {
     </div>
   );
 
-  const rol = usuarioBD.rol;
-  if (rol === "operador")   return <Navigate to="/operador" />;
-  if (rol === "supervisor") return <Navigate to="/supervisor" />;
-  if (rol === "admin")      return <Navigate to="/admin" />;
+  const roles = usuarioBD.roles || [];
+
+  if (roles.includes("admin"))      return <Navigate to="/admin" />;
+  if (roles.includes("supervisor")) return <Navigate to="/supervisor" />;
+  if (roles.includes("operador"))   return <Navigate to="/operador" />;
   return <Navigate to="/mapa" />;
 }
 
