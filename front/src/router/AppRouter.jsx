@@ -62,7 +62,11 @@ function RoleRedirect() {
     </div>
   );
 
+<<<<<<< HEAD
   const roles = usuarioBD.roles || [];
+=======
+  const roles = usuarioBD.roles ?? []; // 👈 array
+>>>>>>> origin/CasauxTobias
 
   if (roles.includes("admin"))      return <Navigate to="/admin" />;
   if (roles.includes("supervisor")) return <Navigate to="/supervisor" />;

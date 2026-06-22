@@ -67,10 +67,9 @@ export default function ProfileModal({ onClose, usuarioExterno = null }) {
     : usuarioExterno.imagenPerfil;
 
   // 👇 rol real desde la BD
-  const rol = esPerfilPropio
-    ? (usuarioBD?.rol ?? "...")
-    : usuarioExterno.rol;
-
+const roles = esPerfilPropio
+  ? (usuarioBD?.roles ?? [])
+  : (usuarioExterno.roles ?? (usuarioExterno.rol ? [usuarioExterno.rol] : []));
   return (
     <div className="fixed inset-0 z-[1002] bg-black/40" onClick={handleClose}>
       <div
@@ -93,9 +92,19 @@ export default function ProfileModal({ onClose, usuarioExterno = null }) {
         </div>
 
         <hr className="mb-3" />
-        <p className="text-sm text-gray-700 mb-3">
-          <span className="font-semibold">Rol:</span> {rol}
-        </p>
+<div className="flex items-center gap-2 mb-3 flex-wrap">
+  <span className="text-sm font-semibold text-gray-700">Roles:</span>
+  {roles.length === 0 ? (
+    <span className="text-sm text-gray-400">...</span>
+  ) : roles.map((r) => (
+    <span
+      key={r}
+      className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600"
+    >
+      {r}
+    </span>
+  ))}
+</div>
         <hr className="mb-3" />
         <p className="text-sm text-gray-700 mb-4">
           <span className="font-semibold">Cantidad Reportes:</span>{" "}

@@ -125,10 +125,28 @@ export default function ReportDetailModal({ reporteId, onClose }) {
             )}
 
             {/* Badges */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-3 flex-wrap">
               <Badge config={PRIORIDAD_BADGE[reporte.prioridad]} />
               <Badge config={ESTADO_BADGE[reporte.estado]} />
             </div>
+
+            {/* Confirmaciones */}
+            {reporte.cantidadConfirmaciones > 1 && (
+              <div className="mb-3">
+                <span className="bg-orange-50 text-orange-500 text-xs font-medium px-3 py-1 rounded-full">
+                  🔁 {reporte.cantidadConfirmaciones} personas confirmaron este problema
+                </span>
+              </div>
+            )}
+
+            {/* Categoría IA */}
+            {reporte.categoriaIA && reporte.categoriaIA !== reporte.categoria && (
+              <div className="mb-4">
+                <span className="bg-blue-50 text-blue-500 text-xs font-medium px-3 py-1 rounded-full">
+                  🤖 IA sugiere: {reporte.categoriaIA}
+                </span>
+              </div>
+            )}
 
             <hr className="mb-4" />
 
@@ -219,7 +237,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
               </div>
             )}
 
-            {/* Comentarios del operador */}
+            {/* Comentarios */}
             {comentarios.length > 0 && (
               <>
                 <hr className="mb-4 mt-4" />

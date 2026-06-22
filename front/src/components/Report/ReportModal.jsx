@@ -19,9 +19,10 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [imagenes, setImagenes] = useState([]); // 👈 array en vez de una sola
+  const [imagenes, setImagenes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [duplicadoDetectado, setDuplicadoDetectado] = useState(false);
   const [direccion, setDireccion] = useState("Villa María");
   const [ciudad, setCiudad] = useState("Villa María");
   const [barrio, setBarrio] = useState("");
@@ -33,25 +34,11 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
           `https://nominatim.openstreetmap.org/reverse?lat=${ubicacion.lat}&lon=${ubicacion.lng}&format=json`
         );
         const data = await response.json();
-
         const calle = data.address?.road;
         const numero = data.address?.house_number;
-        if (calle) {
-          setDireccion(numero ? `${calle} ${numero}` : calle);
-        }
-
-        const ciudadResuelta =
-          data.address?.city ||
-          data.address?.town ||
-          data.address?.village ||
-          "Villa María";
-        setCiudad(ciudadResuelta);
-
-        const barrioResuelto =
-          data.address?.suburb ||
-          data.address?.neighbourhood ||
-          "";
-        setBarrio(barrioResuelto);
+        if (calle) setDireccion(numero ? `${calle} ${numero}` : calle);
+        setCiudad(data.address?.city || data.address?.town || data.address?.village || "Villa María");
+        setBarrio(data.address?.suburb || data.address?.neighbourhood || "");
       } catch (err) {
         console.error("Error resolviendo dirección:", err);
       }
@@ -70,7 +57,6 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       setError("");
       return combinadas;
     });
-    // reset input para permitir agregar la misma foto de nuevo si se eliminó
     e.target.value = null;
   };
 
@@ -84,6 +70,8 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
     if (!titulo || !categoria || !descripcion) {
       return setError("Completá todos los campos obligatorios");
     }
+
+
 
     setLoading(true);
     setError("");
@@ -101,19 +89,30 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       formData.append("ubicacion[barrio]", barrio);
       formData.append("ubicacion[provincia]", "Córdoba");
       formData.append("ubicacion[pais]", "Argentina");
-      imagenes.forEach((img) => formData.append("archivos", img)); // 👈 todas las imágenes
+      imagenes.forEach((img) => formData.append("archivos", img));
 
-      await axios.post(`${API_URL}/reportes`, formData, {
+      const { data } = await axios.post(`${API_URL}/reportes`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      console.log("RESPUESTA BACK:", data);
+      // El back detectó que es duplicado
+if (data.duplicado) {
+  setDuplicadoDetectado(true);
+  setError(
+    data.mensaje
+      ? ` ${data.mensaje}`
+      : " Ya existe un reporte similar en esta zona. ¡Gracias por confirmarlo!"
+  );
+  setLoading(false);
+  // no cerramos automáticamente, el usuario lo cierra
+  return;
+}
 
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error completo:", error);
-      console.error("Response:", error.response);
-      console.log("Data:", JSON.stringify(error.response?.data, null, 2));
-      console.error("Status:", error.response?.status);
+      console.error("Error:", error);
       setError("Error al crear el reporte, intentá de nuevo");
     } finally {
       setLoading(false);
@@ -130,7 +129,6 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-          {/* Título */}
           <input
             type="text"
             placeholder="Título del reporte"
@@ -139,18 +137,14 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             className="border border-gray-300 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
           />
 
-          {/* Categoría */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {categorias.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setCategoria(cat.id)}
-                className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${
-                  categoria === cat.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200"
-                }`}
+                className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${categoria === cat.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                  }`}
               >
                 <img src={cat.icon} className="w-7 h-7" />
                 <span className="text-xs text-gray-600">{cat.label}</span>
@@ -158,7 +152,6 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             ))}
           </div>
 
-          {/* Descripción */}
           <textarea
             placeholder="Descripción del problema..."
             value={descripcion}
@@ -167,9 +160,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             className="border border-gray-300 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
           />
 
-          {/* Imágenes */}
           <div className="flex flex-col gap-2">
-            {/* previews */}
             {imagenes.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {imagenes.map((img, i) => (
@@ -189,8 +180,6 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
                 ))}
               </div>
             )}
-
-            {/* botón agregar — solo si no llegó al máximo */}
             {imagenes.length < MAX_IMAGENES && (
               <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 text-center">
                 {imagenes.length === 0
@@ -207,21 +196,25 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Ubicación resuelta */}
           <p className="text-xs text-gray-400">
             📍 {direccion}{barrio ? `, ${barrio}` : ""}, {ciudad}
           </p>
 
-          {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+          {error && (
+            <p className={`text-xs text-center ${duplicadoDetectado ? "text-orange-500" : "text-red-500"}`}>
+              {error}
+            </p>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 rounded-full text-white font-semibold disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
-          >
-            {loading ? "Enviando..." : "Enviar Reporte"}
-          </button>
+<button
+  type={duplicadoDetectado ? "button" : "submit"}
+  onClick={duplicadoDetectado ? onClose : undefined}
+  disabled={loading}
+  className="w-full py-2 rounded-full text-white font-semibold disabled:opacity-60"
+  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+>
+  {loading ? "Enviando..." : duplicadoDetectado ? "Cerrar" : "Enviar Reporte"}
+</button>
 
         </form>
       </div>

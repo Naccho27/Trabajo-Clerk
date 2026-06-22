@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
@@ -67,12 +68,10 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
       formData.append("categoria", categoria);
       formData.append("descripcion", descripcion);
 
-      // imágenes existentes que el usuario conserva
       imagenesExistentes.forEach((url) =>
         formData.append("imagenesExistentes", url)
       );
 
-      // imágenes nuevas
       imagenesNuevas.forEach((img) =>
         formData.append("archivos", img)
       );
@@ -93,17 +92,27 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[1003] bg-black/40" onClick={onClose}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[1005] bg-black/40 flex items-center justify-center px-4"
+      onClick={onClose}
+    >
       <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-white rounded-t-3xl p-6 pb-10 w-full max-w-2xl slide-up"
+        className="bg-white rounded-3xl p-6 pb-8 w-full max-w-md max-h-[85vh] overflow-y-auto slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold mb-4">Editar Reporte</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">Editar Reporte</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50"
+          >
+            ✕
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-          {/* Título */}
           <input
             type="text"
             placeholder="Título del reporte"
@@ -112,7 +121,6 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             className="border border-gray-300 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
           />
 
-          {/* Categoría */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {categorias.map((cat) => (
               <button
@@ -120,9 +128,7 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
                 type="button"
                 onClick={() => setCategoria(cat.id)}
                 className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${
-                  categoria === cat.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200"
+                  categoria === cat.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
                 }`}
               >
                 <img src={cat.icon} className="w-7 h-7" />
@@ -131,7 +137,6 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             ))}
           </div>
 
-          {/* Descripción */}
           <textarea
             placeholder="Descripción del problema..."
             value={descripcion}
@@ -140,17 +145,13 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             className="border border-gray-300 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
           />
 
-          {/* Imágenes existentes */}
           {imagenesExistentes.length > 0 && (
             <div className="flex flex-col gap-1">
               <p className="text-xs text-gray-400">Fotos actuales</p>
               <div className="grid grid-cols-3 gap-2">
                 {imagenesExistentes.map((url, i) => (
                   <div key={i} className="relative">
-                    <img
-                      src={url}
-                      className="w-full h-20 object-cover rounded-xl border border-gray-100"
-                    />
+                    <img src={url} className="w-full h-20 object-cover rounded-xl border border-gray-100" />
                     <button
                       type="button"
                       onClick={() => handleEliminarExistente(i)}
@@ -164,17 +165,13 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             </div>
           )}
 
-          {/* Imágenes nuevas */}
           {imagenesNuevas.length > 0 && (
             <div className="flex flex-col gap-1">
               <p className="text-xs text-gray-400">Fotos nuevas</p>
               <div className="grid grid-cols-3 gap-2">
                 {imagenesNuevas.map((img, i) => (
                   <div key={i} className="relative">
-                    <img
-                      src={URL.createObjectURL(img)}
-                      className="w-full h-20 object-cover rounded-xl border border-gray-100"
-                    />
+                    <img src={URL.createObjectURL(img)} className="w-full h-20 object-cover rounded-xl border border-gray-100" />
                     <button
                       type="button"
                       onClick={() => handleEliminarNueva(i)}
@@ -188,7 +185,6 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             </div>
           )}
 
-          {/* Botón agregar fotos */}
           {totalImagenes < MAX_IMAGENES && (
             <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 text-center">
               {totalImagenes === 0
@@ -204,7 +200,6 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             </label>
           )}
 
-          {/* Ubicación — no editable */}
           <p className="text-xs text-gray-400">
             📍 {reporte.ubicacion?.direccion}, {reporte.ubicacion?.ciudad}
           </p>
@@ -222,6 +217,7 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
