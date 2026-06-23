@@ -14,7 +14,11 @@ import {
 
   getUsers,
 
-  changeUserRole,
+  createUser,
+
+  addUserRole,
+
+  removeUserRole,
 
   blockUser,
 
@@ -42,16 +46,42 @@ router.get(
 
 /*
 |--------------------------------------------------------------
-| Cambiar rol
+| Crear usuario
+|--------------------------------------------------------------
+*/
+
+router.post(
+  "/users",
+
+  createUser
+);
+
+/*
+|--------------------------------------------------------------
+| Agregar rol
 |--------------------------------------------------------------
 */
 
 router.patch(
-  "/users/:id/role",
+  "/users/:id/add-role",
 
   validate(roleSchema),
 
-  changeUserRole
+  addUserRole
+);
+
+/*
+|--------------------------------------------------------------
+| Quitar rol
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/users/:id/remove-role",
+
+  validate(roleSchema),
+
+  removeUserRole
 );
 
 /*

@@ -5,7 +5,7 @@ import Header from "../components/Navbar/Header";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import PageHeader from "../components/Panel/PageHeader.jsx";
 import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
-import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario } from "../services/adminService";
+import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario, agregarRol, quitarRol } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
 import axios from "axios";
@@ -59,11 +59,25 @@ function Sidebar({ seccion, setSeccion }) {
 
 function ModalCrearUsuario({ onClose, onSuccess }) {
   const { getToken } = useAuth();
-  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", roles: ["ciudadano"] });
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [errorCrear, setErrorCrear] = useState("");
 
+  const toggleRolNuevo = (rol) => {
+    setNuevoUsuario((prev) => {
+      const yaTiene = prev.roles.includes(rol);
+      const roles = yaTiene
+        ? prev.roles.filter((r) => r !== rol)
+        : [...prev.roles, rol];
+      return { ...prev, roles };
+    });
+  };
+
   const handleCrear = async () => {
+    if (nuevoUsuario.roles.length === 0) {
+      setErrorCrear("Seleccioná al menos un rol");
+      return;
+    }
     setCreandoUsuario(true);
     setErrorCrear("");
     try {
@@ -115,11 +129,29 @@ function ModalCrearUsuario({ onClose, onSuccess }) {
             value={nuevoUsuario.password}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })}
             className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-          <select value={nuevoUsuario.rol}
-            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
-            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-gray-400 font-medium px-1">Roles</p>
+            <div className="flex flex-wrap gap-2">
+              {ROLES.map((r) => {
+                const seleccionado = nuevoUsuario.roles.includes(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => toggleRolNuevo(r)}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${
+                      seleccionado
+                        ? ROL_COLORES[r] + " border-transparent"
+                        : "border-gray-200 text-gray-400 hover:bg-gray-50"
+                    }`}
+                  >
+                    {seleccionado ? "✓ " : ""}{r}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-3">
@@ -220,15 +252,18 @@ export default function AdminPage() {
     } catch (error) { console.log("Error desbloqueando:", error); }
   };
 
-  const handleCambiarRol = async (id, nuevoRol) => {
+  const handleToggleRol = async (usuario, rol) => {
     try {
       const token = await getToken({ template: "backend" });
-      await axios.patch(
-        `${API_URL}/admin/users/${id}/role`,
-        { rol: nuevoRol },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setCambiandoRol(null);
+      const yaTiene = usuario.roles?.includes(rol);
+
+      if (yaTiene) {
+        if (usuario.roles.length <= 1) return;
+        await quitarRol(usuario._id, rol, token);
+      } else {
+        await agregarRol(usuario._id, rol, token);
+      }
+
       cargarUsuarios();
     } catch (error) { console.log("Error cambiando rol:", error); }
   };
@@ -252,7 +287,7 @@ export default function AdminPage() {
   const usuariosFiltrados = usuarios.filter((u) => {
     const textMatch = u.nombreUsuario?.toLowerCase().includes(busqueda.toLowerCase()) ||
       u.email?.toLowerCase().includes(busqueda.toLowerCase());
-    const rolMatch = !filtrosUsuarios.rol || u.rol === filtrosUsuarios.rol;
+    const rolMatch = !filtrosUsuarios.rol || u.roles?.includes(filtrosUsuarios.rol);
     const activoMatch = filtrosUsuarios.activo === "" ||
       (filtrosUsuarios.activo === "activo" ? u.activo === true : u.activo === false);
     return textMatch && rolMatch && activoMatch;
@@ -277,10 +312,12 @@ export default function AdminPage() {
               <div>
                 <p className="font-semibold text-lg text-gray-800">{perfilUsuario.nombreUsuario}</p>
                 <p className="text-sm text-gray-400">{perfilUsuario.email}</p>
-                <div className="flex gap-2 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[perfilUsuario.rol]}`}>
-                    {perfilUsuario.rol}
-                  </span>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {perfilUsuario.roles?.map((r) => (
+                    <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r]}`}>
+                      {r}
+                    </span>
+                  ))}
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${perfilUsuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
                     {perfilUsuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
                   </span>
@@ -337,20 +374,37 @@ export default function AdminPage() {
         />
       )}
 
-      {cambiandoRol && (
-        <div
-          className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-32"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {ROLES.map((r) => (
-            <button key={r} onClick={() => handleCambiarRol(cambiandoRol, r)}
-              className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 font-medium ${ROL_COLORES[r]}`}>
-              {r}
-            </button>
-          ))}
-        </div>
-      )}
+      {cambiandoRol && (() => {
+        const usuarioActivo = usuarios.find((u) => u._id === cambiandoRol);
+        if (!usuarioActivo) return null;
+
+        return (
+          <div
+            className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-40"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {ROLES.map((r) => {
+              const tiene = usuarioActivo.roles?.includes(r);
+              const esUltimoRol = tiene && usuarioActivo.roles.length <= 1;
+              return (
+                <button
+                  key={r}
+                  onClick={() => !esUltimoRol && handleToggleRol(usuarioActivo, r)}
+                  disabled={esUltimoRol}
+                  className={`flex items-center justify-between text-xs px-3 py-1.5 rounded-full text-left font-medium ${ROL_COLORES[r]} ${
+                    esUltimoRol ? "opacity-40 cursor-not-allowed" : "hover:opacity-80"
+                  }`}
+                  title={esUltimoRol ? "El usuario debe tener al menos un rol" : ""}
+                >
+                  <span>{r}</span>
+                  <span>{tiene ? "✓" : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <div className="flex flex-1 overflow-hidden pt-[56px]">
         <Sidebar seccion={seccion} setSeccion={setSeccion} />
@@ -365,7 +419,7 @@ export default function AdminPage() {
                 {[
                   { label: "Total usuarios",             value: usuarios.length, color: "text-gray-800", delay: "0ms" },
                   { label: "% Resueltos",                value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600", delay: "100ms" },
-                  { label: "Tiempo promedio resolución", value: tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
+                  { label: "Tiempo promedio resolución", value: tiempoPromedio?.promedio != null ? `${(tiempoPromedio.promedio / 24).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
                 ].map((card) => (
                   <div key={card.label} className="bg-white rounded-2xl shadow-sm p-5"
                     style={{ animation: `fadeInUp 0.5s ease-out ${card.delay} both` }}>
@@ -478,7 +532,7 @@ export default function AdminPage() {
                     <tr>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Usuario</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Email</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Rol</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Roles</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
                     </tr>
@@ -510,9 +564,16 @@ export default function AdminPage() {
                               setDropdownPos({ top: rect.bottom + 4, left: rect.left });
                               setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id);
                             }}
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}
+                            className="flex items-center gap-1 hover:opacity-80"
                           >
-                            {usuario.rol} ▾
+                            <div className="flex gap-1 flex-wrap">
+                              {usuario.roles?.map((r) => (
+                                <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r]}`}>
+                                  {r}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="text-gray-400 text-xs">▾</span>
                           </button>
                         </td>
                         <td className="px-4 py-3">
