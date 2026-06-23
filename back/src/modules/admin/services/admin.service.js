@@ -1,6 +1,15 @@
 import Usuario
 from "../../ciudadano/models/Usuario.js";
+import Categoria
+from "../models/admin.categories.js";
+import { createClerkClient }
+from "@clerk/backend";
 
+const clerkClient =
+  createClerkClient({
+    secretKey:
+      process.env.CLERK_SECRET_KEY
+  });
 /*
 |--------------------------------------------------------------
 | Obtener usuarios
@@ -102,5 +111,227 @@ export const unblockUserService =
     await usuario.save();
 
     return usuario;
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Crear usuario
+|--------------------------------------------------------------
+*/
+
+export const createUserService =
+  async ({
+    nombreUsuario,
+    email,
+    password,
+    rol
+  }) => {
+
+    const usernameLimpio =
+      nombreUsuario
+        .trim()
+        .replace(/\s+/g, "_");
+
+    const emailLimpio =
+      email
+        .trim()
+        .toLowerCase();
+
+    const existe =
+      await Usuario.findOne({
+        email: emailLimpio
+      });
+
+    if (existe) {
+
+      throw new Error(
+        "Ya existe un usuario con ese email"
+      );
+
+    }
+
+    const clerkUser =
+      await clerkClient.users.createUser({
+
+        username:
+          usernameLimpio,
+
+        emailAddress: [
+          emailLimpio
+        ],
+
+        password
+
+      });
+
+    const usuario =
+      await Usuario.create({
+
+        clerkId:
+          clerkUser.id,
+
+        nombreUsuario,
+
+        email:
+          emailLimpio,
+
+        rol,
+
+        activo: true
+
+      });
+
+    return usuario;
+
+  };
+  
+  export const getCategoriesService =
+  async () => {
+
+    return await Categoria.find()
+      .sort({ nombre: 1 });
+
+  };
+
+  export const createCategoryService =
+  async (nombre) => {
+
+    const nombreLimpio =
+      nombre.trim().toLowerCase();
+
+    const existe =
+      await Categoria.findOne({
+        nombre: nombreLimpio
+      });
+
+    if (existe) {
+
+      throw new Error(
+        "La categoría ya existe"
+      );
+
+    }
+
+    return await Categoria.create({
+      nombre: nombreLimpio
+    });
+
+  };
+  /*
+|--------------------------------------------------------------
+| Editar categoría
+|--------------------------------------------------------------
+*/
+
+export const updateCategoryService =
+  async (
+    categoryId,
+    nombre
+  ) => {
+
+    const categoria =
+      await Categoria.findById(
+        categoryId
+      );
+
+    if (!categoria) {
+
+      throw new Error(
+        "Categoría no encontrada"
+      );
+
+    }
+
+    const nombreLimpio =
+      nombre.trim().toLowerCase();
+
+    const existe =
+      await Categoria.findOne({
+
+        nombre: nombreLimpio,
+
+        _id: {
+          $ne: categoryId
+        }
+
+      });
+
+    if (existe) {
+
+      throw new Error(
+        "Ya existe una categoría con ese nombre"
+      );
+
+    }
+
+    categoria.nombre =
+      nombreLimpio;
+
+    await categoria.save();
+
+    return categoria;
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Desactivar categoría
+|--------------------------------------------------------------
+*/
+
+export const disableCategoryService =
+  async (categoryId) => {
+
+    const categoria =
+      await Categoria.findById(
+        categoryId
+      );
+
+    if (!categoria) {
+
+      throw new Error(
+        "Categoría no encontrada"
+      );
+
+    }
+
+    categoria.activa =
+      false;
+
+    await categoria.save();
+
+    return categoria;
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Activar categoría
+|--------------------------------------------------------------
+*/
+
+export const enableCategoryService =
+  async (categoryId) => {
+
+    const categoria =
+      await Categoria.findById(
+        categoryId
+      );
+
+    if (!categoria) {
+
+      throw new Error(
+        "Categoría no encontrada"
+      );
+
+    }
+
+    categoria.activa =
+      true;
+
+    await categoria.save();
+
+    return categoria;
 
   };

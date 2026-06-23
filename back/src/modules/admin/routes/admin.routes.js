@@ -18,7 +18,19 @@ import {
 
   blockUser,
 
-  unblockUser
+  unblockUser,
+
+  createUser,
+
+  getCategories,
+  
+  createCategory,
+  
+  updateCategory,
+
+  disableCategory,
+
+  enableCategory
 
 } from "../controllers/admin.controller.js";
 
@@ -27,6 +39,18 @@ import {
 } from "../validators/admin.validator.js";
 
 const router = Router();
+
+/*
+|--------------------------------------------------------------
+| Crear usuario
+|--------------------------------------------------------------
+*/
+
+router.post(
+  "/users",
+
+  createUser
+);
 
 /*
 |--------------------------------------------------------------
@@ -76,6 +100,50 @@ router.patch(
   "/users/:id/unblock",
 
   unblockUser
+);
+
+
+router.get(
+  "/categories",
+  getCategories
+);
+
+router.post(
+  "/categories",
+  createCategory
+);
+
+/*
+|--------------------------------------------------------------
+| Editar categoría
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/categories/:id",
+  updateCategory
+);
+
+/*
+|--------------------------------------------------------------
+| Desactivar categoría
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/categories/:id/disable",
+  disableCategory
+);
+
+/*
+|--------------------------------------------------------------
+| Activar categoría
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/categories/:id/enable",
+  enableCategory
 );
 
 export default router;
