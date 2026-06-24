@@ -1,11 +1,12 @@
 import Reporte from "../models/Reporte.js";
-import Categoria from "../../admin/models/admin.categories.js"; // 👈
+import Categoria from "../../admin/models/admin.categories.js";
 
 import {
   classifyIncident,
   normalizeIncident,
   detectDuplicateIncident,
-  prioritizeIncident
+  prioritizeIncident,
+  validateReportContent, // 👈 nuevo import
 } from "../../../shared/services/ai.service.js";
 
 /*
@@ -47,6 +48,16 @@ export const crearReporteService = async (datos) => {
   try {
     descripcionNormalizada = await normalizeIncident(datos.descripcion);
     tituloNormalizado = await normalizeIncident(datos.titulo);
+
+    // 👇 validar contenido antes de seguir
+    const validacion = await validateReportContent(tituloNormalizado, descripcionNormalizada);
+
+    if (!validacion.valido) {
+      return {
+        invalido: true,
+        motivo: validacion.motivo || "El reporte contiene contenido inapropiado",
+      };
+    }
 
     const clasificacion = await classifyIncident(
       `${tituloNormalizado} ${descripcionNormalizada}`

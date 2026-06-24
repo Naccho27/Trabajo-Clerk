@@ -100,10 +100,14 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
         setDuplicadoDetectado(true);
         setError(
           data.mensaje
-            ? `⚠️ ${data.mensaje}`
-            : "⚠️ Ya existe un reporte similar en esta zona. ¡Gracias por confirmarlo!"
+            ? ` ${data.mensaje}`
+            : " Ya existe un reporte similar en esta zona. ¡Gracias por confirmarlo!"
         );
-        setLoading(false);
+        return;
+      }
+
+      if (data.invalido) {
+        setError(data.mensaje || "El reporte contiene contenido inapropiado");
         return;
       }
 
@@ -111,7 +115,11 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       onClose();
     } catch (error) {
       console.error("Error:", error);
-      setError("Error al crear el reporte, intentá de nuevo");
+      if (error.response?.data?.invalido) {
+        setError(error.response.data.mensaje || "El reporte contiene contenido inapropiado");
+      } else {
+        setError("Error al crear el reporte, intentá de nuevo");
+      }
     } finally {
       setLoading(false);
     }

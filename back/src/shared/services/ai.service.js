@@ -409,3 +409,63 @@ Máximo 250 palabras.
 
   };
   
+  export const validateReportContent = async (titulo, descripcion) => {
+  try {
+    const prompt = `
+Analiza el siguiente reporte ciudadano y determina si es válido.
+
+Un reporte es INVÁLIDO si:
+- Contiene insultos o lenguaje ofensivo.
+- Es incoherente o no tiene sentido.
+- Es spam o contenido irrelevante.
+- Contiene contenido inapropiado.
+- Es demasiado vago para ser un reporte urbano real.
+
+Un reporte es VÁLIDO si:
+- Describe un problema urbano real.
+- Tiene sentido aunque tenga errores ortográficos.
+- Es comprensible aunque sea breve.
+
+Responde únicamente JSON válido.
+
+Ejemplo:
+{
+  "valido": true,
+  "motivo": ""
+}
+
+Otro ejemplo:
+{
+  "valido": false,
+  "motivo": "El reporte contiene insultos"
+}
+
+Título:
+${titulo}
+
+Descripción:
+${descripcion}
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    const text = response.text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const resultado = JSON.parse(text);
+
+    return {
+      valido: Boolean(resultado.valido),
+      motivo: resultado.motivo || "",
+    };
+
+  } catch (error) {
+    console.error("Error validando contenido:", error.message);
+    return { valido: true, motivo: "" }; // si falla la IA, dejamos pasar
+  }
+};
