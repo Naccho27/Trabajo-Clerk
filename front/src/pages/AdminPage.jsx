@@ -5,7 +5,7 @@ import Header from "../components/Navbar/Header";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import PageHeader from "../components/Panel/PageHeader.jsx";
 import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
-import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario, agregarRol, quitarRol } from "../services/adminService";
+import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario, agregarRol, quitarRol, obtenerResumenCiudad } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
 import axios from "axios";
@@ -170,6 +170,131 @@ function ModalCrearUsuario({ onClose, onSuccess }) {
   );
 }
 
+function ModalResumenIA({ onClose }) {
+  const { getToken } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [resumen, setResumen] = useState(null);
+
+  const handleGenerar = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const token = await getToken({ template: "backend" });
+      const data = await obtenerResumenCiudad(token);
+      setResumen(data.resumen);
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al generar el resumen");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
+        style={{ animation: "fadeInUp 0.3s ease-out" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-gray-800 text-lg">Resumen de la ciudad</p>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">
+            ✕
+          </button>
+        </div>
+
+        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+
+        {!resumen && !loading && (
+          <div className="flex flex-col items-center gap-4 py-8">
+            <p className="text-sm text-gray-400 text-center">
+              Generá un resumen con IA sobre el estado actual de los reportes en la ciudad.
+            </p>
+            <button
+              onClick={handleGenerar}
+              className="text-white text-sm font-semibold px-6 py-2.5 rounded-full"
+              style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+            >
+              Generar resumen
+            </button>
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-sm text-gray-400">Generando resumen...</p>
+          </div>
+        )}
+
+        {resumen && !loading && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {resumen.resumenIA}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Datos utilizados</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Total reportes</p>
+                  <p className="text-lg font-bold text-gray-800">{resumen.estadisticas?.totalReportes ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Resueltos</p>
+                  <p className="text-lg font-bold text-green-600">{resumen.estadisticas?.reportesResueltos ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Pendientes</p>
+                  <p className="text-lg font-bold text-blue-600">{resumen.estadisticas?.reportesPendientes ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Críticos</p>
+                  <p className="text-lg font-bold text-red-600">{resumen.estadisticas?.reportesCriticos ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Prioridad alta</p>
+                  <p className="text-lg font-bold text-orange-500">{resumen.estadisticas?.reportesAltos ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Duplicados</p>
+                  <p className="text-lg font-bold text-gray-500">{resumen.estadisticas?.reportesDuplicados ?? "—"}</p>
+                </div>
+              </div>
+
+              {resumen.estadisticas?.categorias && (
+                <div className="bg-gray-50 rounded-xl p-3 mt-1">
+                  <p className="text-xs text-gray-400 mb-2">Por categoría</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(resumen.estadisticas.categorias).map(([cat, cant]) => (
+                      <span key={cat} className="text-xs bg-white border border-gray-200 rounded-full px-2.5 py-1 text-gray-600 capitalize">
+                        {cat}: <span className="font-semibold">{cant}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleGenerar}
+              className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
+            >
+              Volver a generar
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { getToken } = useAuth();
   const { user } = useUser();
@@ -186,6 +311,7 @@ export default function AdminPage() {
   const [reportesUsuario, setReportesUsuario] = useState([]);
   const [loadingReportes, setLoadingReportes] = useState(false);
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
+  const [mostrarModalResumen, setMostrarModalResumen] = useState(false);
 
   const [estadoData, setEstadoData] = useState([]);
   const [categoriaData, setCategoriaData] = useState([]);
@@ -374,6 +500,12 @@ export default function AdminPage() {
         />
       )}
 
+      {mostrarModalResumen && (
+        <ModalResumenIA
+          onClose={() => setMostrarModalResumen(false)}
+        />
+      )}
+
       {cambiandoRol && (() => {
         const usuarioActivo = usuarios.find((u) => u._id === cambiandoRol);
         if (!usuarioActivo) return null;
@@ -415,6 +547,17 @@ export default function AdminPage() {
           {seccion === "dashboard" && (
             <div className="flex flex-col gap-6">
               <DashboardSaludo user={user} rol="Admin" />
+
+              <div className="flex justify-start">
+                <button
+                  onClick={() => setMostrarModalResumen(true)}
+                  className="text-white text-sm font-semibold px-5 py-2.5 rounded-full flex items-center gap-2"
+                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+                >
+                   Resumen
+                </button>
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 {[
                   { label: "Total usuarios",             value: usuarios.length, color: "text-gray-800", delay: "0ms" },
