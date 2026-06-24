@@ -8,7 +8,9 @@ import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
 import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario, agregarRol, quitarRol, obtenerResumenCiudad } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
+import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import axios from "axios";
+
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,6 +21,34 @@ const ROL_COLORES = {
   supervisor: "bg-purple-100 text-purple-600",
   operador:   "bg-green-100 text-green-600",
   admin:      "bg-red-100 text-red-600",
+};
+
+// Colores fijos para categorías conocidas
+const COLOR_CATEGORIA_FIJO = {
+  baches:     "#ef4444", // rojo
+  residuos:   "#a855f7", // violeta
+  alumbrado:  "#eab308", // amarillo
+  semaforo:   "#f97316", // naranja
+  inundacion: "#3b82f6", // azul
+};
+
+// Paleta de respaldo para categorías nuevas (no definidas arriba)
+const PALETA_RESPALDO = [
+  "#06b6d4", "#22c55e", "#ec4899", "#8b5cf6", "#f59e0b", "#14b8a6",
+];
+
+// Genera un color estable a partir del nombre, para categorías nuevas
+const colorPorHash = (nombre) => {
+  let hash = 0;
+  for (let i = 0; i < nombre.length; i++) {
+    hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PALETA_RESPALDO.length;
+  return PALETA_RESPALDO[index];
+};
+
+const obtenerColorCategoria = (nombreCategoria) => {
+  return COLOR_CATEGORIA_FIJO[nombreCategoria] || colorPorHash(nombreCategoria);
 };
 
 const ESTADO_COLORES = {
@@ -571,44 +601,112 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
-                  { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
-                  { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
-                ].map(({ titulo, data, colorFn, delay }) => (
-                  <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
-                    style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <p className="font-semibold text-gray-700">{titulo}</p>
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
-                          <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((item, i) => (
-                          <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                            <td className="px-4 py-2">
-                              {colorFn ? (
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
-                                  {item._id}
-                                </span>
-                              ) : (
-                                <span className="capitalize text-gray-600">{item._id}</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
+{/* Tablas (como estaban originalmente) */}
+<div className="grid grid-cols-3 gap-4">
+  {[
+    { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
+    { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
+    { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
+  ].map(({ titulo, data, colorFn, delay }) => (
+    <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
+      style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
+      <div className="px-5 py-4 border-b border-gray-100">
+        <p className="font-semibold text-gray-700">{titulo}</p>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
+            <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item, i) => (
+            <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+              <td className="px-4 py-2">
+                {colorFn ? (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
+                    {item._id}
+                  </span>
+                ) : (
+                  <span className="capitalize text-gray-600">{item._id}</span>
+                )}
+              </td>
+              <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ))}
+</div>
+
+{/* Gráficos (nuevo) */}
+<div className="grid grid-cols-2 gap-4">
+  {/* Por estado - gráfico de barras */}
+  <div className="bg-white rounded-2xl shadow-sm overflow-hidden"
+    style={{ animation: "fadeInUp 0.5s ease-out 600ms both" }}>
+    <div className="px-5 py-4 border-b border-gray-100">
+      <p className="font-semibold text-gray-700">Por estado (gráfico)</p>
+    </div>
+    <div className="p-4" style={{ height: 220 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={estadoData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
+          <XAxis dataKey="_id" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="cantidad" radius={[6, 6, 0, 0]} isAnimationActive={true} animationDuration={800} animationEasing="ease-out">
+            {estadoData.map((item, i) => {
+              const colorMap = {
+                open: "#378ADD", validated: "#7F77DD", in_progress: "#d6be38",
+                resolved: "#22c55e", rejected: "#E24B4A",
+              };
+              return <Cell key={i} fill={colorMap[item._id] || "#9ca3af"} />;
+            })}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+
+  {/* Por categoría - gráfico de dona */}
+  <div className="bg-white rounded-2xl shadow-sm overflow-hidden"
+    style={{ animation: "fadeInUp 0.5s ease-out 700ms both" }}>
+    <div className="px-5 py-4 border-b border-gray-100">
+      <p className="font-semibold text-gray-700">Por categoría (gráfico)</p>
+    </div>
+    <div className="p-4" style={{ height: 220 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+           data={categoriaData}
+           dataKey="cantidad"
+           nameKey="_id"
+           cx="50%"
+           cy="50%"
+           innerRadius={45}
+           outerRadius={70}
+           paddingAngle={2}
+           isAnimationActive={true}
+           animationDuration={1670}
+           animationEasing="ease-out"
+           animationBegin={100}
+          >
+            {categoriaData.map((item, i) => (
+              <Cell key={i} fill={obtenerColorCategoria(item._id)} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={(value) => <span className="capitalize">{value}</span>}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</div>
             </div>
           )}
 
