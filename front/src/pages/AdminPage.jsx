@@ -5,7 +5,7 @@ import Header from "../components/Navbar/Header";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import PageHeader from "../components/Panel/PageHeader.jsx";
 import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
-import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario } from "../services/adminService";
+import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario, agregarRol, quitarRol } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
 import axios from "axios";
@@ -29,9 +29,8 @@ const ESTADO_COLORES = {
 };
 
 const NAV_ITEMS = [
-  { key: "dashboard",  label: "Dashboard" },
-  { key: "usuarios",   label: "Usuarios" },
-  { key: "categorias", label: "Categorías" },
+  { key: "dashboard", label: "Dashboard" },
+  { key: "usuarios",  label: "Usuarios" },
 ];
 
 const selectClass = "border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 bg-white outline-none focus:border-blue-400 cursor-pointer";
@@ -60,17 +59,34 @@ function Sidebar({ seccion, setSeccion }) {
 
 function ModalCrearUsuario({ onClose, onSuccess }) {
   const { getToken } = useAuth();
-  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", roles: ["ciudadano"] });
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [errorCrear, setErrorCrear] = useState("");
 
+  const toggleRolNuevo = (rol) => {
+    setNuevoUsuario((prev) => {
+      const yaTiene = prev.roles.includes(rol);
+      const roles = yaTiene
+        ? prev.roles.filter((r) => r !== rol)
+        : [...prev.roles, rol];
+      return { ...prev, roles };
+    });
+  };
+
   const handleCrear = async () => {
+    if (nuevoUsuario.roles.length === 0) {
+      setErrorCrear("Seleccioná al menos un rol");
+      return;
+    }
     setCreandoUsuario(true);
     setErrorCrear("");
     try {
       const token = await getToken({ template: "backend" });
-      await axios.post(`${API_URL}/admin/users`, nuevoUsuario,
-        { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(
+        `${API_URL}/admin/users`,
+        nuevoUsuario,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       onSuccess();
       onClose();
     } catch (error) {
@@ -81,190 +97,72 @@ function ModalCrearUsuario({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
-        style={{ animation: "fadeInUp 0.3s ease-out" }} onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
+        style={{ animation: "fadeInUp 0.3s ease-out" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <p className="font-semibold text-gray-800 text-lg">Nuevo usuario</p>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">
+            ✕
+          </button>
         </div>
+
         {errorCrear && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{errorCrear}</p>}
+
         <div className="flex flex-col gap-3">
-          <input type="text" placeholder="Nombre de usuario" value={nuevoUsuario.nombreUsuario}
+          <input type="text" placeholder="Nombre de usuario"
+            value={nuevoUsuario.nombreUsuario}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombreUsuario: e.target.value })}
             className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-          <input type="email" placeholder="Email" value={nuevoUsuario.email}
+          <input type="email" placeholder="Email"
+            value={nuevoUsuario.email}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })}
             className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-          <input type="password" placeholder="Contraseña" value={nuevoUsuario.password}
+          <input type="password" placeholder="Contraseña"
+            value={nuevoUsuario.password}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })}
             className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-          <select value={nuevoUsuario.rol}
-            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
-            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-gray-400 font-medium px-1">Roles</p>
+            <div className="flex flex-wrap gap-2">
+              {ROLES.map((r) => {
+                const seleccionado = nuevoUsuario.roles.includes(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => toggleRolNuevo(r)}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${
+                      seleccionado
+                        ? ROL_COLORES[r] + " border-transparent"
+                        : "border-gray-200 text-gray-400 hover:bg-gray-50"
+                    }`}
+                  >
+                    {seleccionado ? "✓ " : ""}{r}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
+
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
+            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">
+            Cancelar
+          </button>
           <button onClick={handleCrear} disabled={creandoUsuario}
             className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
             style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
             {creandoUsuario ? "Creando..." : "Crear"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ModalCrearCategoria({ onClose, onSuccess }) {
-  const { getToken } = useAuth();
-  const [nombre, setNombre] = useState("");
-  const [imagen, setImagen] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleImagenChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImagen(file);
-      setPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleCrear = async () => {
-    if (!nombre.trim()) return setError("El nombre es obligatorio");
-    setLoading(true);
-    setError("");
-    try {
-      const token = await getToken({ template: "backend" });
-      const formData = new FormData();
-      formData.append("nombre", nombre);
-      if (imagen) formData.append("imagen", imagen);
-
-      await axios.post(`${API_URL}/admin/categories`, formData,
-        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
-      onSuccess();
-      onClose();
-    } catch (error) {
-      setError(error.response?.data?.mensaje || "Error al crear categoría");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
-        style={{ animation: "fadeInUp 0.3s ease-out" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-800 text-lg">Nueva categoría</p>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
-        </div>
-        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
-
-        <input type="text" placeholder="Nombre de la categoría" value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-
-        <div className="flex items-center gap-3">
-          {preview && (
-            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200" />
-          )}
-          <label className="flex-1 cursor-pointer border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 text-center">
-            {imagen ? imagen.name : "Subir imagen (opcional)"}
-            <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
-          </label>
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
-          <button onClick={handleCrear} disabled={loading}
-            className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
-            {loading ? "Creando..." : "Crear"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ModalEditarCategoria({ categoria, onClose, onSuccess }) {
-  const { getToken } = useAuth();
-  const [nombre, setNombre] = useState(categoria.nombre);
-  const [imagen, setImagen] = useState(null);
-  const [preview, setPreview] = useState(categoria.imagen || null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleImagenChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImagen(file);
-      setPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleEditar = async () => {
-    if (!nombre.trim()) return setError("El nombre es obligatorio");
-    setLoading(true);
-    setError("");
-    try {
-      const token = await getToken({ template: "backend" });
-      const formData = new FormData();
-      formData.append("nombre", nombre);
-      if (imagen) formData.append("imagen", imagen);
-
-      await axios.patch(`${API_URL}/admin/categories/${categoria._id}`, formData,
-        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
-      onSuccess();
-      onClose();
-    } catch (error) {
-      setError(error.response?.data?.mensaje || "Error al editar categoría");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
-        style={{ animation: "fadeInUp 0.3s ease-out" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-800 text-lg">Editar categoría</p>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
-        </div>
-        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
-
-        <input type="text" placeholder="Nombre de la categoría" value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-
-        <div className="flex items-center gap-3">
-          {preview && (
-            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200" />
-          )}
-          <label className="flex-1 cursor-pointer border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 text-center">
-            {imagen ? imagen.name : "Cambiar imagen"}
-            <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
-          </label>
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
-          <button onClick={handleEditar} disabled={loading}
-            className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
-            {loading ? "Guardando..." : "Guardar"}
           </button>
         </div>
       </div>
@@ -295,11 +193,6 @@ export default function AdminPage() {
   const [porcentaje, setPorcentaje] = useState(null);
   const [tiempoPromedio, setTiempoPromedio] = useState(null);
 
-  const [categorias, setCategorias] = useState([]);
-  const [loadingCategorias, setLoadingCategorias] = useState(false);
-  const [mostrarModalCrearCat, setMostrarModalCrearCat] = useState(false);
-  const [categoriaEditando, setCategoriaEditando] = useState(null);
-
   useEffect(() => { cargarTodo(); }, []);
 
   useEffect(() => {
@@ -307,10 +200,6 @@ export default function AdminPage() {
     document.addEventListener("click", handleClickFuera);
     return () => document.removeEventListener("click", handleClickFuera);
   }, []);
-
-  useEffect(() => {
-    if (seccion === "categorias") cargarCategorias();
-  }, [seccion]);
 
   const cargarTodo = async () => {
     await Promise.all([cargarUsuarios(), cargarAnalytics()]);
@@ -347,32 +236,6 @@ export default function AdminPage() {
     }
   };
 
-  const cargarCategorias = async () => {
-    setLoadingCategorias(true);
-    try {
-      const token = await getToken({ template: "backend" });
-      const { data } = await axios.get(`${API_URL}/admin/categories`,
-        { headers: { Authorization: `Bearer ${token}` } });
-      setCategorias(data.categorias || []);
-    } catch (error) {
-      console.log("Error cargando categorías:", error);
-    } finally {
-      setLoadingCategorias(false);
-    }
-  };
-
-  const handleToggleCategoria = async (categoria) => {
-    try {
-      const token = await getToken({ template: "backend" });
-      const endpoint = categoria.activa ? "disable" : "enable";
-      await axios.patch(`${API_URL}/admin/categories/${categoria._id}/${endpoint}`, {},
-        { headers: { Authorization: `Bearer ${token}` } });
-      cargarCategorias();
-    } catch (error) {
-      console.log("Error toggling categoría:", error);
-    }
-  };
-
   const handleBloquear = async (id) => {
     try {
       const token = await getToken({ template: "backend" });
@@ -389,12 +252,18 @@ export default function AdminPage() {
     } catch (error) { console.log("Error desbloqueando:", error); }
   };
 
-  const handleCambiarRol = async (id, nuevoRol) => {
+  const handleToggleRol = async (usuario, rol) => {
     try {
       const token = await getToken({ template: "backend" });
-      await axios.patch(`${API_URL}/admin/users/${id}/role`, { rol: nuevoRol },
-        { headers: { Authorization: `Bearer ${token}` } });
-      setCambiandoRol(null);
+      const yaTiene = usuario.roles?.includes(rol);
+
+      if (yaTiene) {
+        if (usuario.roles.length <= 1) return;
+        await quitarRol(usuario._id, rol, token);
+      } else {
+        await agregarRol(usuario._id, rol, token);
+      }
+
       cargarUsuarios();
     } catch (error) { console.log("Error cambiando rol:", error); }
   };
@@ -418,12 +287,13 @@ export default function AdminPage() {
   const usuariosFiltrados = usuarios.filter((u) => {
     const textMatch = u.nombreUsuario?.toLowerCase().includes(busqueda.toLowerCase()) ||
       u.email?.toLowerCase().includes(busqueda.toLowerCase());
-    const rolMatch = !filtrosUsuarios.rol || u.rol === filtrosUsuarios.rol;
+    const rolMatch = !filtrosUsuarios.rol || u.roles?.includes(filtrosUsuarios.rol);
     const activoMatch = filtrosUsuarios.activo === "" ||
       (filtrosUsuarios.activo === "activo" ? u.activo === true : u.activo === false);
     return textMatch && rolMatch && activoMatch;
   });
 
+  // VISTA PERFIL
   if (perfilUsuario) {
     return (
       <div className="w-screen h-screen flex flex-col bg-gray-50">
@@ -433,17 +303,21 @@ export default function AdminPage() {
           <div className="flex-1 ml-52 overflow-y-auto px-8 py-6 flex flex-col gap-4"
             style={{ animation: "fadeInUp 0.4s ease-out" }}>
             <button onClick={() => setPerfilUsuario(null)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit">← Volver</button>
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit">
+              ← Volver
+            </button>
             <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-6">
               <img src={perfilUsuario.imagenPerfil || "https://via.placeholder.com/60"}
                 alt="perfil" className="w-16 h-16 rounded-full object-cover" />
               <div>
                 <p className="font-semibold text-lg text-gray-800">{perfilUsuario.nombreUsuario}</p>
                 <p className="text-sm text-gray-400">{perfilUsuario.email}</p>
-                <div className="flex gap-2 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[perfilUsuario.rol]}`}>
-                    {perfilUsuario.rol}
-                  </span>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {perfilUsuario.roles?.map((r) => (
+                    <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r]}`}>
+                      {r}
+                    </span>
+                  ))}
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${perfilUsuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
                     {perfilUsuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
                   </span>
@@ -494,35 +368,43 @@ export default function AdminPage() {
       <Header />
 
       {mostrarModalCrear && (
-        <ModalCrearUsuario onClose={() => setMostrarModalCrear(false)} onSuccess={cargarUsuarios} />
-      )}
-
-      {mostrarModalCrearCat && (
-        <ModalCrearCategoria onClose={() => setMostrarModalCrearCat(false)} onSuccess={cargarCategorias} />
-      )}
-
-      {categoriaEditando && (
-        <ModalEditarCategoria
-          categoria={categoriaEditando}
-          onClose={() => setCategoriaEditando(null)}
-          onSuccess={cargarCategorias}
+        <ModalCrearUsuario
+          onClose={() => setMostrarModalCrear(false)}
+          onSuccess={cargarUsuarios}
         />
       )}
 
-      {cambiandoRol && (
-        <div
-          className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-32"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {ROLES.map((r) => (
-            <button key={r} onClick={() => handleCambiarRol(cambiandoRol, r)}
-              className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 font-medium ${ROL_COLORES[r]}`}>
-              {r}
-            </button>
-          ))}
-        </div>
-      )}
+      {cambiandoRol && (() => {
+        const usuarioActivo = usuarios.find((u) => u._id === cambiandoRol);
+        if (!usuarioActivo) return null;
+
+        return (
+          <div
+            className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-40"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {ROLES.map((r) => {
+              const tiene = usuarioActivo.roles?.includes(r);
+              const esUltimoRol = tiene && usuarioActivo.roles.length <= 1;
+              return (
+                <button
+                  key={r}
+                  onClick={() => !esUltimoRol && handleToggleRol(usuarioActivo, r)}
+                  disabled={esUltimoRol}
+                  className={`flex items-center justify-between text-xs px-3 py-1.5 rounded-full text-left font-medium ${ROL_COLORES[r]} ${
+                    esUltimoRol ? "opacity-40 cursor-not-allowed" : "hover:opacity-80"
+                  }`}
+                  title={esUltimoRol ? "El usuario debe tener al menos un rol" : ""}
+                >
+                  <span>{r}</span>
+                  <span>{tiene ? "✓" : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <div className="flex flex-1 overflow-hidden pt-[56px]">
         <Sidebar seccion={seccion} setSeccion={setSeccion} />
@@ -535,9 +417,9 @@ export default function AdminPage() {
               <DashboardSaludo user={user} rol="Admin" />
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Total usuarios", value: usuarios.length, color: "text-gray-800", delay: "0ms" },
-                  { label: "% Resueltos", value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600", delay: "100ms" },
-                  { label: "Tiempo promedio resolución", value: tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
+                  { label: "Total usuarios",             value: usuarios.length, color: "text-gray-800", delay: "0ms" },
+                  { label: "% Resueltos",                value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600", delay: "100ms" },
+                  { label: "Tiempo promedio resolución", value: tiempoPromedio?.promedio != null ? `${(tiempoPromedio.promedio / 24).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
                 ].map((card) => (
                   <div key={card.label} className="bg-white rounded-2xl shadow-sm p-5"
                     style={{ animation: `fadeInUp 0.5s ease-out ${card.delay} both` }}>
@@ -548,7 +430,7 @@ export default function AdminPage() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { titulo: "Por estado", data: estadoData, colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
+                  { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
                   { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
                   { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
                 ].map(({ titulo, data, colorFn, delay }) => (
@@ -590,45 +472,67 @@ export default function AdminPage() {
           {/* USUARIOS */}
           {seccion === "usuarios" && (
             <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.4s ease-out" }}>
+
+              {/* Header con botón */}
               <div className="flex items-start justify-between">
-                <PageHeader titulo="Usuarios" subtitulo="Gestioná los roles y el acceso de los usuarios del sistema" />
-                <button onClick={() => setMostrarModalCrear(true)}
+                <PageHeader
+                  titulo="Usuarios"
+                  subtitulo="Gestioná los roles y el acceso de los usuarios del sistema"
+                />
+                <button
+                  onClick={() => setMostrarModalCrear(true)}
                   className="text-white text-sm font-semibold px-4 py-2 rounded-full shrink-0"
-                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
+                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+                >
                   + Nuevo usuario
                 </button>
               </div>
+
+              {/* Filtros */}
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
-                  <BuscadorInput value={busqueda} onChange={setBusqueda} placeholder="Buscar usuario..." />
+                  <BuscadorInput
+                    value={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar usuario..."
+                  />
                 </div>
-                <select value={filtrosUsuarios.rol}
+                <select
+                  value={filtrosUsuarios.rol}
                   onChange={(e) => setFiltrosUsuarios({ ...filtrosUsuarios, rol: e.target.value })}
-                  className={selectClass}>
+                  className={selectClass}
+                >
                   <option value="">Todos los roles</option>
-                  {ROLES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                  ))}
                 </select>
-                <select value={filtrosUsuarios.activo}
+                <select
+                  value={filtrosUsuarios.activo}
                   onChange={(e) => setFiltrosUsuarios({ ...filtrosUsuarios, activo: e.target.value })}
-                  className={selectClass}>
+                  className={selectClass}
+                >
                   <option value="">Todos los estados</option>
                   <option value="activo">Activo</option>
                   <option value="bloqueado">Bloqueado</option>
                 </select>
                 {(filtrosUsuarios.rol || filtrosUsuarios.activo || busqueda) && (
-                  <button onClick={() => { setFiltrosUsuarios({ rol: "", activo: "" }); setBusqueda(""); }}
-                    className="text-xs text-red-400 hover:text-red-600 px-2">
+                  <button
+                    onClick={() => { setFiltrosUsuarios({ rol: "", activo: "" }); setBusqueda(""); }}
+                    className="text-xs text-red-400 hover:text-red-600 px-2"
+                  >
                     Limpiar filtros ✕
                   </button>
                 )}
               </div>
+
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Usuario</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Email</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Rol</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Roles</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
                     </tr>
@@ -639,7 +543,8 @@ export default function AdminPage() {
                     ) : usuariosFiltrados.length === 0 ? (
                       <tr><td colSpan={5} className="text-center py-8 text-gray-400">No hay usuarios</td></tr>
                     ) : usuariosFiltrados.map((usuario, i) => (
-                      <tr key={usuario._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      <tr key={usuario._id}
+                        className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
                         style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -659,8 +564,16 @@ export default function AdminPage() {
                               setDropdownPos({ top: rect.bottom + 4, left: rect.left });
                               setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id);
                             }}
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}>
-                            {usuario.rol} ▾
+                            className="flex items-center gap-1 hover:opacity-80"
+                          >
+                            <div className="flex gap-1 flex-wrap">
+                              {usuario.roles?.map((r) => (
+                                <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r]}`}>
+                                  {r}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="text-gray-400 text-xs">▾</span>
                           </button>
                         </td>
                         <td className="px-4 py-3">
@@ -688,71 +601,6 @@ export default function AdminPage() {
               </div>
             </div>
           )}
-
-          {/* CATEGORÍAS */}
-          {seccion === "categorias" && (
-            <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.4s ease-out" }}>
-              <div className="flex items-start justify-between">
-                <PageHeader titulo="Categorías" subtitulo="Gestioná las categorías disponibles para los reportes" />
-                <button onClick={() => setMostrarModalCrearCat(true)}
-                  className="text-white text-sm font-semibold px-4 py-2 rounded-full shrink-0"
-                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
-                  + Nueva categoría
-                </button>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Imagen</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Nombre</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingCategorias ? (
-                      <tr><td colSpan={4} className="text-center py-8 text-gray-400">Cargando...</td></tr>
-                    ) : categorias.length === 0 ? (
-                      <tr><td colSpan={4} className="text-center py-8 text-gray-400">No hay categorías</td></tr>
-                    ) : categorias.map((cat, i) => (
-                      <tr key={cat._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                        style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
-                        <td className="px-4 py-3">
-                          {cat.imagen ? (
-                            <img src={cat.imagen} alt={cat.nombre} className="w-9 h-9 rounded-lg object-cover" />
-                          ) : (
-                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-gray-800 capitalize">{cat.nombre}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat.activa ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
-                            {cat.activa ? "🟢 Activa" : "🔴 Inactiva"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => setCategoriaEditando(cat)}
-                              className="text-xs border border-gray-200 text-gray-500 rounded-full px-3 py-1 hover:bg-gray-50">
-                              Editar
-                            </button>
-                            <button onClick={() => handleToggleCategoria(cat)}
-                              className={`text-xs border rounded-full px-3 py-1 ${cat.activa
-                                ? "border-red-200 text-red-500 hover:bg-red-50"
-                                : "border-green-200 text-green-500 hover:bg-green-50"}`}>
-                              {cat.activa ? "Desactivar" : "Activar"}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
         </div>
       </div>
     </div>

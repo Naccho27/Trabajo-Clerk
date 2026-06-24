@@ -4,7 +4,11 @@ import {
 
   getUsersService,
 
-  changeUserRoleService,
+  createUserService,
+
+  addUserRoleService,
+
+  removeUserRoleService,
 
   blockUserService,
 
@@ -63,11 +67,11 @@ export const getUsers =
 
 /*
 |--------------------------------------------------------------
-| Cambiar rol
+| Crear usuario
 |--------------------------------------------------------------
 */
 
-export const changeUserRole =
+export const createUser =
   async (
     req,
     res,
@@ -77,7 +81,83 @@ export const changeUserRole =
     try {
 
       const usuario =
-        await changeUserRoleService(
+        await createUserService(
+          req.body
+        );
+
+      res.status(201).json({
+
+        ok: true,
+
+        usuario
+
+      });
+
+    } catch (error) {
+
+      next(error);
+
+    }
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Agregar rol
+|--------------------------------------------------------------
+*/
+
+export const addUserRole =
+  async (
+    req,
+    res,
+    next
+  ) => {
+
+    try {
+
+      const usuario =
+        await addUserRoleService(
+
+          req.params.id,
+
+          req.body.rol
+
+        );
+
+      res.status(200).json({
+
+        ok: true,
+
+        usuario
+
+      });
+
+    } catch (error) {
+
+      next(error);
+
+    }
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Quitar rol
+|--------------------------------------------------------------
+*/
+
+export const removeUserRole =
+  async (
+    req,
+    res,
+    next
+  ) => {
+
+    try {
+
+      const usuario =
+        await removeUserRoleService(
 
           req.params.id,
 

@@ -97,6 +97,13 @@ export const updateReportStatusService = async (reporteId, nuevoEstado, usuarioI
   });
 
   reporte.estado = nuevoEstado;
+
+  if (nuevoEstado === "resolved" && !reporte.fechaResolucion) {
+    reporte.fechaResolucion = new Date();
+    reporte.tiempoResolucionHoras =
+      (reporte.fechaResolucion - reporte.createdAt) / (1000 * 60 * 60);
+  }
+
   await reporte.save();
   return reporte;
 };
@@ -155,6 +162,8 @@ export const resolveReportService = async (reporteId, usuarioId) => {
 
   reporte.estado = "resolved";
   reporte.fechaResolucion = new Date();
+  reporte.tiempoResolucionHoras =
+    (reporte.fechaResolucion - reporte.createdAt) / (1000 * 60 * 60);
 
   reporte.historialEstados.push({
     estado: "resolved",

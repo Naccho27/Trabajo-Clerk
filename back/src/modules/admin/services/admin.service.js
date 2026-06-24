@@ -1,15 +1,8 @@
 import Usuario
-  from "../../ciudadano/models/Usuario.js";
-import Categoria
-  from "../models/admin.categories.js";
-import { createClerkClient }
-  from "@clerk/backend";
+from "../../ciudadano/models/Usuario.js";
 
-const clerkClient =
-  createClerkClient({
-    secretKey:
-      process.env.CLERK_SECRET_KEY
-  });
+import { clerkClient } from "@clerk/express";
+
 /*
 |--------------------------------------------------------------
 | Obtener usuarios
@@ -26,11 +19,62 @@ export const getUsersService =
 
 /*
 |--------------------------------------------------------------
-| Cambiar rol
+| Crear usuario (Admin)
 |--------------------------------------------------------------
 */
 
-export const changeUserRoleService =
+export const createUserService =
+  async ({
+    nombreUsuario,
+    email,
+    password,
+    roles
+  }) => {
+
+    const clerkUser =
+      await clerkClient.users.createUser({
+
+        emailAddress: [email],
+
+        password,
+
+        username: nombreUsuario,
+
+        skipPasswordChecks: false,
+
+        skipLegalChecks: true,
+
+      });
+
+    const usuario =
+      await Usuario.create({
+
+        clerkId: clerkUser.id,
+
+        nombreUsuario,
+
+        email,
+
+        roles: roles?.length
+          ? roles
+          : ["ciudadano"],
+
+        imagenPerfil:
+          clerkUser.imageUrl || "",
+
+      });
+
+    return usuario;
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Agregar rol
+|--------------------------------------------------------------
+*/
+
+export const addUserRoleService =
   async (
     userId,
     nuevoRol
@@ -47,12 +91,57 @@ export const changeUserRoleService =
 
     }
 
-if (!usuario.roles) {
-  usuario.roles = [];
-}
-if (!usuario.roles.includes(nuevoRol)) {
-  usuario.roles = [nuevoRol]; // reemplaza todos los roles con el nuevo
-}
+    if (
+      !usuario.roles.includes(nuevoRol)
+    ) {
+
+      usuario.roles.push(nuevoRol);
+
+      await usuario.save();
+
+    }
+
+    return usuario;
+
+  };
+
+/*
+|--------------------------------------------------------------
+| Quitar rol
+|--------------------------------------------------------------
+*/
+
+export const removeUserRoleService =
+  async (
+    userId,
+    rolAQuitar
+  ) => {
+
+    const usuario =
+      await Usuario.findById(userId);
+
+    if (!usuario) {
+
+      throw new Error(
+        "Usuario no encontrado"
+      );
+
+    }
+
+    if (
+      usuario.roles.length <= 1
+    ) {
+
+      throw new Error(
+        "El usuario debe tener al menos un rol"
+      );
+
+    }
+
+    usuario.roles =
+      usuario.roles.filter(
+        (r) => r !== rolAQuitar
+      );
 
     await usuario.save();
 
@@ -115,255 +204,5 @@ export const unblockUserService =
     await usuario.save();
 
     return usuario;
-
-  };
-
-/*
-|--------------------------------------------------------------
-| Crear usuario
-|--------------------------------------------------------------
-*/
-
-export const createUserService =
-  async ({
-    nombreUsuario,
-    email,
-    password,
-    rol
-  }) => {
-
-    const usernameLimpio =
-      nombreUsuario
-        .trim()
-        .replace(/\s+/g, "_");
-
-    const emailLimpio =
-      email
-        .trim()
-        .toLowerCase();
-
-    const existe =
-      await Usuario.findOne({
-        email: emailLimpio
-      });
-
-    if (existe) {
-
-      throw new Error(
-        "Ya existe un usuario con ese email"
-      );
-
-    }
-
-    const clerkUser =
-      await clerkClient.users.createUser({
-
-        username:
-          usernameLimpio,
-
-        emailAddress: [
-          emailLimpio
-        ],
-
-        password
-
-      });
-
-    const usuario =
-      await Usuario.create({
-
-        clerkId:
-          clerkUser.id,
-
-        nombreUsuario,
-
-        email:
-          emailLimpio,
-
-        rol,
-
-        activo: true
-
-      });
-
-    return usuario;
-
-  };
-
-/*
-|--------------------------------------------------------------
-| Obtener TODAS las categorías (admin)
-|--------------------------------------------------------------
-*/
-
-export const getCategoriesService =
-  async () => {
-
-    return await Categoria.find()
-      .sort({ nombre: 1 });
-
-  };
-
-/*
-|--------------------------------------------------------------
-| Obtener solo categorías ACTIVAS (pública)
-|--------------------------------------------------------------
-*/
-
-export const getActiveCategoriesService =
-  async () => {
-
-    return await Categoria.find({
-      activa: true
-    }).sort({ nombre: 1 });
-
-  };
-
-export const createCategoryService =
-  async (nombre, imagenUrl) => {
-
-    const nombreLimpio =
-      nombre.trim().toLowerCase();
-
-    const existe =
-      await Categoria.findOne({
-        nombre: nombreLimpio
-      });
-
-    if (existe) {
-
-      throw new Error(
-        "La categoría ya existe"
-      );
-
-    }
-
-    return await Categoria.create({
-      nombre: nombreLimpio,
-      ...(imagenUrl && { imagen: imagenUrl }),
-    });
-
-  };
-/*
-|--------------------------------------------------------------
-| Editar categoría
-|--------------------------------------------------------------
-*/
-
-export const updateCategoryService =
-  async (
-    categoryId,
-    nombre,
-    imagenUrl
-  ) => {
-
-    const categoria =
-      await Categoria.findById(
-        categoryId
-      );
-
-    if (!categoria) {
-
-      throw new Error(
-        "Categoría no encontrada"
-      );
-
-    }
-
-    const nombreLimpio =
-      nombre.trim().toLowerCase();
-
-    const existe =
-      await Categoria.findOne({
-
-        nombre: nombreLimpio,
-
-        _id: {
-          $ne: categoryId
-        }
-
-      });
-
-    if (existe) {
-
-      throw new Error(
-        "Ya existe una categoría con ese nombre"
-      );
-
-    }
-
-    categoria.nombre =
-      nombreLimpio;
-
-    if (imagenUrl) {
-      categoria.imagen =
-        imagenUrl;
-    }
-
-    await categoria.save();
-
-    return categoria;
-
-  };
-
-/*
-|--------------------------------------------------------------
-| Desactivar categoría
-|--------------------------------------------------------------
-*/
-
-export const disableCategoryService =
-  async (categoryId) => {
-
-    const categoria =
-      await Categoria.findById(
-        categoryId
-      );
-
-    if (!categoria) {
-
-      throw new Error(
-        "Categoría no encontrada"
-      );
-
-    }
-
-    categoria.activa =
-      false;
-
-    await categoria.save();
-
-    return categoria;
-
-  };
-
-/*
-|--------------------------------------------------------------
-| Activar categoría
-|--------------------------------------------------------------
-*/
-
-export const enableCategoryService =
-  async (categoryId) => {
-
-    const categoria =
-      await Categoria.findById(
-        categoryId
-      );
-
-    if (!categoria) {
-
-      throw new Error(
-        "Categoría no encontrada"
-      );
-
-    }
-
-    categoria.activa =
-      true;
-
-    await categoria.save();
-
-    return categoria;
 
   };
