@@ -1,20 +1,21 @@
 import { Router }
-from "express";
+  from "express";
 
 import authMiddleware
-from "../../auth/middlewares/auth.middleware.js";
+  from "../../auth/middlewares/auth.middleware.js";
 
 import { requireRole }
-from "../../../shared/middlewares/requireRole.js";
+  from "../../../shared/middlewares/requireRole.js";
 
 import { validate }
-from "../../../shared/middlewares/validate.middleware.js";
+  from "../../../shared/middlewares/validate.middleware.js";
+
+import { upload }
+  from "../../../shared/middlewares/upload.middleware.js";
 
 import {
 
   getUsers,
-
-  createUser,
 
   addUserRole,
 
@@ -22,7 +23,21 @@ import {
 
   blockUser,
 
-  unblockUser
+  unblockUser,
+
+  createUser,
+
+  getCategories,
+
+  getActiveCategories,
+
+  createCategory,
+
+  updateCategory,
+
+  disableCategory,
+
+  enableCategory
 
 } from "../controllers/admin.controller.js";
 
@@ -31,6 +46,27 @@ import {
 } from "../validators/admin.validator.js";
 
 const router = Router();
+
+/*
+|--------------------------------------------------------------
+| Pública - listar categorías activas
+|--------------------------------------------------------------
+*/
+
+router.get(
+  "/categories/active",
+  getActiveCategories
+);
+
+/*
+|--------------------------------------------------------------
+| A partir de aquí, todo requiere admin
+|--------------------------------------------------------------
+*/
+
+router.use(authMiddleware);
+router.use(requireRole("admin"));
+
 
 /*
 |--------------------------------------------------------------
@@ -106,6 +142,51 @@ router.patch(
   "/users/:id/unblock",
 
   unblockUser
+);
+
+router.get(
+  "/categories",
+  getCategories
+);
+
+router.post(
+  "/categories",
+  upload.single("imagen"),
+  createCategory
+);
+
+/*
+|--------------------------------------------------------------
+| Editar categoría
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/categories/:id",
+  upload.single("imagen"),
+  updateCategory
+);
+
+/*
+|--------------------------------------------------------------
+| Desactivar categoría
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/categories/:id/disable",
+  disableCategory
+);
+
+/*
+|--------------------------------------------------------------
+| Activar categoría
+|--------------------------------------------------------------
+*/
+
+router.patch(
+  "/categories/:id/enable",
+  enableCategory
 );
 
 export default router;

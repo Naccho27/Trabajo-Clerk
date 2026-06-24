@@ -117,8 +117,3 @@ app.get("/", (req, res) => {
 });
 
 export default app;
-
-app.use(
-  "/api/reportes",
-  reporteRoutes
-);

@@ -98,7 +98,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
               <h3 className="font-bold text-sm leading-tight">{reporte.titulo}</h3>
               {reporte.cantidadConfirmaciones > 1 && (
                 <span className="text-xs font-medium text-orange-500">
-                  🔁 {reporte.cantidadConfirmaciones} personas reportaron esto
+                   {reporte.cantidadConfirmaciones} personas reportaron esto
                 </span>
               )}
               <span className="text-xs text-gray-400">

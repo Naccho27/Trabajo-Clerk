@@ -6,7 +6,7 @@ export const requireRole = (...rolesPermitidos) => {
 
     try {
 
-      const auth = req.auth();
+      const auth = typeof req.auth === "function" ? req.auth() : req.auth; // 👈 fix
 
       if (!auth?.userId) {
 

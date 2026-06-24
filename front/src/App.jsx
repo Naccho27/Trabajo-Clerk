@@ -38,7 +38,7 @@ function App() {
         );
 
         setUsuarioBD(data.usuario);
-        console.log("USUARIO SINCRONIZADO", data.usuario.roles);
+        console.log("USUARIO SINCRONIZADO", data.usuario.roles); // 👈
 
         if (data.usuario.activo === false) {
           await signOut();

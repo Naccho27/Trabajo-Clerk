@@ -3,20 +3,21 @@ import { createPortal } from "react-dom";
 import { useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
+import { useCategorias } from "../../context/CategoriasContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const MAX_IMAGENES = 3;
 
-const categorias = [
-  { id: "baches",     label: "Bache",      icon: icons.baches },
-  { id: "residuos",   label: "Residuos",   icon: icons.residuos },
-  { id: "alumbrado",  label: "Alumbrado",  icon: icons.alumbrado },
-  { id: "semaforo",   label: "Semáforo",   icon: icons.semaforo },
-  { id: "inundacion", label: "Inundación", icon: icons.inundacion },
-];
-
 export default function EditReportModal({ reporte, onClose, onSuccess }) {
   const { getToken } = useAuth();
+  const { categorias: categoriasBD } = useCategorias();
+
+  const categorias = categoriasBD.map(cat => ({
+    id: cat.nombre,
+    label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
+    icon: icons[cat.nombre] ?? icons.todos,
+  }));
+
   const [titulo, setTitulo]           = useState(reporte.titulo);
   const [categoria, setCategoria]     = useState(reporte.categoria);
   const [descripcion, setDescripcion] = useState(reporte.descripcion);

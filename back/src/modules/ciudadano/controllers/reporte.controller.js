@@ -55,6 +55,16 @@ export const crearReporte = async (req, res) => {
       modoAnonimo: !usuario,
     });
 
+        if (nuevoReporte.duplicado) {
+      return res.status(200).json({
+        ok: true,
+        duplicado: true,
+        reporteOriginal: nuevoReporte.reporteOriginal,
+        confianza: nuevoReporte.confianza,
+        mensaje: nuevoReporte.mensaje,
+      });
+    }
+    
     res.status(201).json({ ok: true, reporte: nuevoReporte });
   } catch (error) {
     console.log(error);
