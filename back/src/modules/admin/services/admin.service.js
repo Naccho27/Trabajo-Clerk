@@ -1,7 +1,10 @@
-import Usuario
-from "../../ciudadano/models/Usuario.js";
+import Usuario from "../../ciudadano/models/Usuario.js";
+import Categoria from "../models/admin.categories.js";
+import { createClerkClient } from "@clerk/backend";
 
-import { clerkClient } from "@clerk/express";
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY
+});
 
 /*
 |--------------------------------------------------------------
@@ -9,13 +12,9 @@ import { clerkClient } from "@clerk/express";
 |--------------------------------------------------------------
 */
 
-export const getUsersService =
-  async () => {
-
-    return await Usuario.find()
-      .sort({ createdAt: -1 });
-
-  };
+export const getUsersService = async () => {
+  return await Usuario.find().sort({ createdAt: -1 });
+};
 
 /*
 |--------------------------------------------------------------
@@ -23,50 +22,25 @@ export const getUsersService =
 |--------------------------------------------------------------
 */
 
-export const createUserService =
-  async ({
+export const createUserService = async ({ nombreUsuario, email, password, roles }) => {
+  const clerkUser = await clerkClient.users.createUser({
+    emailAddress: [email],
+    password,
+    username: nombreUsuario,
+    skipPasswordChecks: false,
+    skipLegalChecks: true,
+  });
+
+  const usuario = await Usuario.create({
+    clerkId: clerkUser.id,
     nombreUsuario,
     email,
-    password,
-    roles
-  }) => {
+    roles: roles?.length ? roles : ["ciudadano"],
+    imagenPerfil: clerkUser.imageUrl || "",
+  });
 
-    const clerkUser =
-      await clerkClient.users.createUser({
-
-        emailAddress: [email],
-
-        password,
-
-        username: nombreUsuario,
-
-        skipPasswordChecks: false,
-
-        skipLegalChecks: true,
-
-      });
-
-    const usuario =
-      await Usuario.create({
-
-        clerkId: clerkUser.id,
-
-        nombreUsuario,
-
-        email,
-
-        roles: roles?.length
-          ? roles
-          : ["ciudadano"],
-
-        imagenPerfil:
-          clerkUser.imageUrl || "",
-
-      });
-
-    return usuario;
-
-  };
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -74,36 +48,17 @@ export const createUserService =
 |--------------------------------------------------------------
 */
 
-export const addUserRoleService =
-  async (
-    userId,
-    nuevoRol
-  ) => {
+export const addUserRoleService = async (userId, nuevoRol) => {
+  const usuario = await Usuario.findById(userId);
+  if (!usuario) throw new Error("Usuario no encontrado");
 
-    const usuario =
-      await Usuario.findById(userId);
+  if (!usuario.roles.includes(nuevoRol)) {
+    usuario.roles.push(nuevoRol);
+    await usuario.save();
+  }
 
-    if (!usuario) {
-
-      throw new Error(
-        "Usuario no encontrado"
-      );
-
-    }
-
-    if (
-      !usuario.roles.includes(nuevoRol)
-    ) {
-
-      usuario.roles.push(nuevoRol);
-
-      await usuario.save();
-
-    }
-
-    return usuario;
-
-  };
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -111,43 +66,18 @@ export const addUserRoleService =
 |--------------------------------------------------------------
 */
 
-export const removeUserRoleService =
-  async (
-    userId,
-    rolAQuitar
-  ) => {
+export const removeUserRoleService = async (userId, rolAQuitar) => {
+  const usuario = await Usuario.findById(userId);
+  if (!usuario) throw new Error("Usuario no encontrado");
 
-    const usuario =
-      await Usuario.findById(userId);
+  if (usuario.roles.length <= 1) {
+    throw new Error("El usuario debe tener al menos un rol");
+  }
 
-    if (!usuario) {
-
-      throw new Error(
-        "Usuario no encontrado"
-      );
-
-    }
-
-    if (
-      usuario.roles.length <= 1
-    ) {
-
-      throw new Error(
-        "El usuario debe tener al menos un rol"
-      );
-
-    }
-
-    usuario.roles =
-      usuario.roles.filter(
-        (r) => r !== rolAQuitar
-      );
-
-    await usuario.save();
-
-    return usuario;
-
-  };
+  usuario.roles = usuario.roles.filter((r) => r !== rolAQuitar);
+  await usuario.save();
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -155,28 +85,13 @@ export const removeUserRoleService =
 |--------------------------------------------------------------
 */
 
-export const blockUserService =
-  async (userId) => {
-
-    const usuario =
-      await Usuario.findById(userId);
-
-    if (!usuario) {
-
-      throw new Error(
-        "Usuario no encontrado"
-      );
-
-    }
-
-    usuario.activo =
-      false;
-
-    await usuario.save();
-
-    return usuario;
-
-  };
+export const blockUserService = async (userId) => {
+  const usuario = await Usuario.findById(userId);
+  if (!usuario) throw new Error("Usuario no encontrado");
+  usuario.activo = false;
+  await usuario.save();
+  return usuario;
+};
 
 /*
 |--------------------------------------------------------------
@@ -184,25 +99,68 @@ export const blockUserService =
 |--------------------------------------------------------------
 */
 
-export const unblockUserService =
-  async (userId) => {
+export const unblockUserService = async (userId) => {
+  const usuario = await Usuario.findById(userId);
+  if (!usuario) throw new Error("Usuario no encontrado");
+  usuario.activo = true;
+  await usuario.save();
+  return usuario;
+};
 
-    const usuario =
-      await Usuario.findById(userId);
+/*
+|--------------------------------------------------------------
+| Obtener TODAS las categorías (admin)
+|--------------------------------------------------------------
+*/
 
-    if (!usuario) {
+export const getCategoriesService = async () => {
+  return await Categoria.find().sort({ nombre: 1 });
+};
 
-      throw new Error(
-        "Usuario no encontrado"
-      );
+/*
+|--------------------------------------------------------------
+| Obtener solo categorías ACTIVAS (pública)
+|--------------------------------------------------------------
+*/
 
-    }
+export const getActiveCategoriesService = async () => {
+  return await Categoria.find({ activa: true }).sort({ nombre: 1 });
+};
 
-    usuario.activo =
-      true;
+export const createCategoryService = async (nombre, imagenUrl) => {
+  const nombreLimpio = nombre.trim().toLowerCase();
+  const existe = await Categoria.findOne({ nombre: nombreLimpio });
+  if (existe) throw new Error("La categoría ya existe");
+  return await Categoria.create({
+    nombre: nombreLimpio,
+    ...(imagenUrl && { imagen: imagenUrl }),
+  });
+};
 
-    await usuario.save();
+export const updateCategoryService = async (categoryId, nombre, imagenUrl) => {
+  const categoria = await Categoria.findById(categoryId);
+  if (!categoria) throw new Error("Categoría no encontrada");
+  const nombreLimpio = nombre.trim().toLowerCase();
+  const existe = await Categoria.findOne({ nombre: nombreLimpio, _id: { $ne: categoryId } });
+  if (existe) throw new Error("Ya existe una categoría con ese nombre");
+  categoria.nombre = nombreLimpio;
+  if (imagenUrl) categoria.imagen = imagenUrl;
+  await categoria.save();
+  return categoria;
+};
 
-    return usuario;
+export const disableCategoryService = async (categoryId) => {
+  const categoria = await Categoria.findById(categoryId);
+  if (!categoria) throw new Error("Categoría no encontrada");
+  categoria.activa = false;
+  await categoria.save();
+  return categoria;
+};
 
-  };
+export const enableCategoryService = async (categoryId) => {
+  const categoria = await Categoria.findById(categoryId);
+  if (!categoria) throw new Error("Categoría no encontrada");
+  categoria.activa = true;
+  await categoria.save();
+  return categoria;
+};

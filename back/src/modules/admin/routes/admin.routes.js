@@ -17,8 +17,6 @@ import {
 
   getUsers,
 
-  createUser,
-
   addUserRole,
 
   removeUserRole,
@@ -69,17 +67,6 @@ router.get(
 router.use(authMiddleware);
 router.use(requireRole("admin"));
 
-/*
-|--------------------------------------------------------------
-| Crear usuario
-|--------------------------------------------------------------
-*/
-
-router.post(
-  "/users",
-
-  createUser
-);
 
 /*
 |--------------------------------------------------------------
