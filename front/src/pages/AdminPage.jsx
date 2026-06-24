@@ -31,7 +31,7 @@ const ESTADO_COLORES = {
 const NAV_ITEMS = [
   { key: "dashboard",  label: "Dashboard" },
   { key: "usuarios",   label: "Usuarios" },
-  { key: "categorias", label: "Categorías" }, // 👈
+  { key: "categorias", label: "Categorías" },
 ];
 
 const selectClass = "border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 bg-white outline-none focus:border-blue-400 cursor-pointer";
@@ -123,8 +123,18 @@ function ModalCrearUsuario({ onClose, onSuccess }) {
 function ModalCrearCategoria({ onClose, onSuccess }) {
   const { getToken } = useAuth();
   const [nombre, setNombre] = useState("");
+  const [imagen, setImagen] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleImagenChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImagen(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleCrear = async () => {
     if (!nombre.trim()) return setError("El nombre es obligatorio");
@@ -132,8 +142,12 @@ function ModalCrearCategoria({ onClose, onSuccess }) {
     setError("");
     try {
       const token = await getToken({ template: "backend" });
-      await axios.post(`${API_URL}/admin/categories`, { nombre },
-        { headers: { Authorization: `Bearer ${token}` } });
+      const formData = new FormData();
+      formData.append("nombre", nombre);
+      if (imagen) formData.append("imagen", imagen);
+
+      await axios.post(`${API_URL}/admin/categories`, formData,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
       onSuccess();
       onClose();
     } catch (error) {
@@ -153,9 +167,21 @@ function ModalCrearCategoria({ onClose, onSuccess }) {
             className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
         </div>
         {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+
         <input type="text" placeholder="Nombre de la categoría" value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+
+        <div className="flex items-center gap-3">
+          {preview && (
+            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200" />
+          )}
+          <label className="flex-1 cursor-pointer border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 text-center">
+            {imagen ? imagen.name : "Subir imagen (opcional)"}
+            <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
+          </label>
+        </div>
+
         <div className="flex gap-3">
           <button onClick={onClose}
             className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
@@ -173,8 +199,18 @@ function ModalCrearCategoria({ onClose, onSuccess }) {
 function ModalEditarCategoria({ categoria, onClose, onSuccess }) {
   const { getToken } = useAuth();
   const [nombre, setNombre] = useState(categoria.nombre);
+  const [imagen, setImagen] = useState(null);
+  const [preview, setPreview] = useState(categoria.imagen || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleImagenChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImagen(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleEditar = async () => {
     if (!nombre.trim()) return setError("El nombre es obligatorio");
@@ -182,8 +218,12 @@ function ModalEditarCategoria({ categoria, onClose, onSuccess }) {
     setError("");
     try {
       const token = await getToken({ template: "backend" });
-      await axios.patch(`${API_URL}/admin/categories/${categoria._id}`, { nombre },
-        { headers: { Authorization: `Bearer ${token}` } });
+      const formData = new FormData();
+      formData.append("nombre", nombre);
+      if (imagen) formData.append("imagen", imagen);
+
+      await axios.patch(`${API_URL}/admin/categories/${categoria._id}`, formData,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
       onSuccess();
       onClose();
     } catch (error) {
@@ -203,9 +243,21 @@ function ModalEditarCategoria({ categoria, onClose, onSuccess }) {
             className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
         </div>
         {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+
         <input type="text" placeholder="Nombre de la categoría" value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+
+        <div className="flex items-center gap-3">
+          {preview && (
+            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200" />
+          )}
+          <label className="flex-1 cursor-pointer border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 text-center">
+            {imagen ? imagen.name : "Cambiar imagen"}
+            <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
+          </label>
+        </div>
+
         <div className="flex gap-3">
           <button onClick={onClose}
             className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
@@ -243,7 +295,6 @@ export default function AdminPage() {
   const [porcentaje, setPorcentaje] = useState(null);
   const [tiempoPromedio, setTiempoPromedio] = useState(null);
 
-  // 👇 estados categorías
   const [categorias, setCategorias] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(false);
   const [mostrarModalCrearCat, setMostrarModalCrearCat] = useState(false);
@@ -653,6 +704,7 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
+                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Imagen</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Nombre</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
@@ -660,12 +712,19 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {loadingCategorias ? (
-                      <tr><td colSpan={3} className="text-center py-8 text-gray-400">Cargando...</td></tr>
+                      <tr><td colSpan={4} className="text-center py-8 text-gray-400">Cargando...</td></tr>
                     ) : categorias.length === 0 ? (
-                      <tr><td colSpan={3} className="text-center py-8 text-gray-400">No hay categorías</td></tr>
+                      <tr><td colSpan={4} className="text-center py-8 text-gray-400">No hay categorías</td></tr>
                     ) : categorias.map((cat, i) => (
                       <tr key={cat._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
                         style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
+                        <td className="px-4 py-3">
+                          {cat.imagen ? (
+                            <img src={cat.imagen} alt={cat.nombre} className="w-9 h-9 rounded-lg object-cover" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 font-medium text-gray-800 capitalize">{cat.nombre}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat.activa ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>

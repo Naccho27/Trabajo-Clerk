@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-import {
-  CATEGORIAS_INCIDENTES
-} from "../constants/categorias.js";
-
 /*
 |--------------------------------------------------------------------------
 | Base
@@ -22,9 +18,7 @@ const reporteBaseSchema = {
     .min(10)
     .max(1000),
 
-  categoria: z.enum(
-    CATEGORIAS_INCIDENTES
-  ),
+  categoria: z.string().min(1),
 
   ubicacion: z.object({
 

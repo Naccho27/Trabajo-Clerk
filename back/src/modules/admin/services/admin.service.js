@@ -1,9 +1,9 @@
 import Usuario
-from "../../ciudadano/models/Usuario.js";
+  from "../../ciudadano/models/Usuario.js";
 import Categoria
-from "../models/admin.categories.js";
+  from "../models/admin.categories.js";
 import { createClerkClient }
-from "@clerk/backend";
+  from "@clerk/backend";
 
 const clerkClient =
   createClerkClient({
@@ -47,8 +47,12 @@ export const changeUserRoleService =
 
     }
 
-    usuario.rol =
-      nuevoRol;
+if (!usuario.roles) {
+  usuario.roles = [];
+}
+if (!usuario.roles.includes(nuevoRol)) {
+  usuario.roles = [nuevoRol]; // reemplaza todos los roles con el nuevo
+}
 
     await usuario.save();
 
@@ -185,8 +189,14 @@ export const createUserService =
     return usuario;
 
   };
-  
-  export const getCategoriesService =
+
+/*
+|--------------------------------------------------------------
+| Obtener TODAS las categorías (admin)
+|--------------------------------------------------------------
+*/
+
+export const getCategoriesService =
   async () => {
 
     return await Categoria.find()
@@ -194,8 +204,23 @@ export const createUserService =
 
   };
 
-  export const createCategoryService =
-  async (nombre) => {
+/*
+|--------------------------------------------------------------
+| Obtener solo categorías ACTIVAS (pública)
+|--------------------------------------------------------------
+*/
+
+export const getActiveCategoriesService =
+  async () => {
+
+    return await Categoria.find({
+      activa: true
+    }).sort({ nombre: 1 });
+
+  };
+
+export const createCategoryService =
+  async (nombre, imagenUrl) => {
 
     const nombreLimpio =
       nombre.trim().toLowerCase();
@@ -214,11 +239,12 @@ export const createUserService =
     }
 
     return await Categoria.create({
-      nombre: nombreLimpio
+      nombre: nombreLimpio,
+      ...(imagenUrl && { imagen: imagenUrl }),
     });
 
   };
-  /*
+/*
 |--------------------------------------------------------------
 | Editar categoría
 |--------------------------------------------------------------
@@ -227,7 +253,8 @@ export const createUserService =
 export const updateCategoryService =
   async (
     categoryId,
-    nombre
+    nombre,
+    imagenUrl
   ) => {
 
     const categoria =
@@ -267,6 +294,11 @@ export const updateCategoryService =
 
     categoria.nombre =
       nombreLimpio;
+
+    if (imagenUrl) {
+      categoria.imagen =
+        imagenUrl;
+    }
 
     await categoria.save();
 

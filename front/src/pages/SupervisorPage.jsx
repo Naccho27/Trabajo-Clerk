@@ -9,6 +9,7 @@ import BarrasCategoria from "../components/Panel/BarrasCategoria.jsx";
 import StatCard from "../components/Panel/StatCard.jsx";
 import ActividadReciente from "../components/Panel/ActividadReciente.jsx";
 import PageHeader from "../components/Panel/PageHeader.jsx";
+import { useCategorias } from "../context/CategoriasContext.jsx";
 import {
   obtenerReportesPendientes,
   aprobarReporte,
@@ -17,13 +18,12 @@ import {
   cambiarPrioridad,
 } from "../services/supervisorService";
 
-const CATEGORIAS = ["baches", "inundacion", "alumbrado", "semaforo", "residuos"];
 const PRIORIDADES = ["low", "medium", "high", "critical"];
 
 const PRIORIDAD_CONFIG = {
-  low: { label: "Baja", color: "#888780", bg: "#88878015" },
-  medium: { label: "Media", color: "#378ADD", bg: "#378ADD15" },
-  high: { label: "Alta", color: "#BA7517", bg: "#BA751715" },
+  low:      { label: "Baja",    color: "#888780", bg: "#88878015" },
+  medium:   { label: "Media",   color: "#378ADD", bg: "#378ADD15" },
+  high:     { label: "Alta",    color: "#BA7517", bg: "#BA751715" },
   critical: { label: "Crítica", color: "#E24B4A", bg: "#E24B4A15" },
 };
 
@@ -65,7 +65,11 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
   const [expandido, setExpandido] = useState(false);
   const [mostrarCats, setMostrarCats] = useState(false);
   const [mostrarPrios, setMostrarPrios] = useState(false);
+  const { categorias } = useCategorias();
   const prioridad = PRIORIDAD_CONFIG[reporte.prioridad];
+
+  const getIconoCategoria = (nombre) =>
+    categorias.find(c => c.nombre === nombre)?.imagen || icons[nombre];
 
   return (
     <>
@@ -76,7 +80,7 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
       >
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
-            <img src={icons[reporte.categoria]} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
+            <img src={getIconoCategoria(reporte.categoria)} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
             <span className="font-medium text-gray-800">{reporte.titulo}</span>
           </div>
         </td>
@@ -113,7 +117,9 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                     />
                     <div>
                       <p className="text-xs font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
-                      <p className="text-xs text-gray-400 capitalize">{reporte.usuarioId.roles?.join(", ")}</p>
+                      <p className="text-xs text-gray-400 capitalize">
+                        {reporte.usuarioId.roles?.join(", ")}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -129,6 +135,7 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
               )}
 
               <div className="flex items-center gap-3 flex-wrap">
+                {/* Cambiar categoría */}
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMostrarCats(!mostrarCats); setMostrarPrios(false); }}
@@ -139,17 +146,19 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                   {mostrarCats && (
                     <div className="absolute top-9 left-0 z-[100] bg-white rounded-2xl shadow-lg p-3 grid grid-cols-3 gap-2 w-56"
                       onClick={(e) => e.stopPropagation()}>
-                      {CATEGORIAS.map((cat) => (
-                        <button key={cat} onClick={() => { onCambiarCategoria(reporte._id, cat); setMostrarCats(false); }}
+                      {categorias.map((cat) => (
+                        <button key={cat._id}
+                          onClick={() => { onCambiarCategoria(reporte._id, cat.nombre); setMostrarCats(false); }}
                           className="flex flex-col items-center gap-1 p-2 hover:bg-gray-50 rounded-xl">
-                          <img src={icons[cat]} className="w-7 h-7" alt={cat} />
-                          <span className="text-xs capitalize text-gray-600">{cat}</span>
+                          <img src={cat.imagen || icons[cat.nombre]} className="w-7 h-7" alt={cat.nombre} />
+                          <span className="text-xs capitalize text-gray-600">{cat.nombre}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
 
+                {/* Cambiar prioridad */}
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMostrarPrios(!mostrarPrios); setMostrarCats(false); }}
@@ -163,7 +172,8 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                       {PRIORIDADES.map((p) => {
                         const cfg = PRIORIDAD_CONFIG[p];
                         return (
-                          <button key={p} onClick={() => { onCambiarPrioridad(reporte._id, p); setMostrarPrios(false); }}
+                          <button key={p}
+                            onClick={() => { onCambiarPrioridad(reporte._id, p); setMostrarPrios(false); }}
                             className="rounded-xl py-1.5 px-3 text-xs font-medium hover:opacity-80"
                             style={{ background: cfg.bg, color: cfg.color }}>
                             {cfg.label}
@@ -254,8 +264,8 @@ export default function SupervisorPage() {
 
   const reportesFiltrados = reportes.filter((r) => {
     const textMatch = r.titulo?.toLowerCase().includes(busqueda.toLowerCase())
-      || r.categoria?.toLowerCase().includes(busqueda.toLowerCase())
-      || r.ubicacion?.direccion?.toLowerCase().includes(busqueda.toLowerCase()); const catMatch = !filtros.categoria || r.categoria === filtros.categoria;
+      || r.ubicacion?.direccion?.toLowerCase().includes(busqueda.toLowerCase());
+    const catMatch = !filtros.categoria || r.categoria === filtros.categoria;
     const prioMatch = !filtros.prioridad || r.prioridad === filtros.prioridad;
     const fecha = new Date(r.createdAt);
     const desdeMatch = !filtros.fechaDesde || fecha >= new Date(filtros.fechaDesde);
@@ -264,7 +274,7 @@ export default function SupervisorPage() {
   }).sort((a, b) => ORDEN_PRIORIDAD[a.prioridad] - ORDEN_PRIORIDAD[b.prioridad]);
 
   const sidebarItems = [
-    { id: "dashboard", label: "Dashboard", count: 0 },
+    { id: "dashboard",  label: "Dashboard",  count: 0 },
     { id: "pendientes", label: "Pendientes", count: reportes.length },
   ];
 

@@ -2,20 +2,21 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
+import { useCategorias } from "../../context/CategoriasContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const MAX_IMAGENES = 3;
 
-const categorias = [
-  { id: "baches", label: "Bache", icon: icons.baches },
-  { id: "residuos", label: "Residuos", icon: icons.residuos },
-  { id: "alumbrado", label: "Alumbrado", icon: icons.alumbrado },
-  { id: "semaforo", label: "Semáforo", icon: icons.semaforo },
-  { id: "inundacion", label: "Inundación", icon: icons.inundacion },
-];
-
 export default function ReportModal({ ubicacion, onClose, onSuccess }) {
   const { getToken } = useAuth();
+  const { categorias: categoriasBD } = useCategorias();
+
+  const categorias = categoriasBD.map(cat => ({
+    id: cat.nombre,
+    label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
+    icon: icons[cat.nombre] ?? icons.todos,
+  }));
+
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -71,8 +72,6 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       return setError("Completá todos los campos obligatorios");
     }
 
-
-
     setLoading(true);
     setError("");
 
@@ -96,18 +95,17 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
       });
 
       console.log("RESPUESTA BACK:", data);
-      // El back detectó que es duplicado
-if (data.duplicado) {
-  setDuplicadoDetectado(true);
-  setError(
-    data.mensaje
-      ? ` ${data.mensaje}`
-      : " Ya existe un reporte similar en esta zona. ¡Gracias por confirmarlo!"
-  );
-  setLoading(false);
-  // no cerramos automáticamente, el usuario lo cierra
-  return;
-}
+
+      if (data.duplicado) {
+        setDuplicadoDetectado(true);
+        setError(
+          data.mensaje
+            ? `⚠️ ${data.mensaje}`
+            : "⚠️ Ya existe un reporte similar en esta zona. ¡Gracias por confirmarlo!"
+        );
+        setLoading(false);
+        return;
+      }
 
       onSuccess();
       onClose();
@@ -128,7 +126,6 @@ if (data.duplicado) {
         <h2 className="text-lg font-bold mb-4">Nuevo Reporte</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
           <input
             type="text"
             placeholder="Título del reporte"
@@ -143,8 +140,9 @@ if (data.duplicado) {
                 key={cat.id}
                 type="button"
                 onClick={() => setCategoria(cat.id)}
-                className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${categoria === cat.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                  }`}
+                className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${
+                  categoria === cat.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                }`}
               >
                 <img src={cat.icon} className="w-7 h-7" />
                 <span className="text-xs text-gray-600">{cat.label}</span>
@@ -206,16 +204,15 @@ if (data.duplicado) {
             </p>
           )}
 
-<button
-  type={duplicadoDetectado ? "button" : "submit"}
-  onClick={duplicadoDetectado ? onClose : undefined}
-  disabled={loading}
-  className="w-full py-2 rounded-full text-white font-semibold disabled:opacity-60"
-  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
->
-  {loading ? "Enviando..." : duplicadoDetectado ? "Cerrar" : "Enviar Reporte"}
-</button>
-
+          <button
+            type={duplicadoDetectado ? "button" : "submit"}
+            onClick={duplicadoDetectado ? onClose : undefined}
+            disabled={loading}
+            className="w-full py-2 rounded-full text-white font-semibold disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+          >
+            {loading ? "Enviando..." : duplicadoDetectado ? "Cerrar" : "Enviar Reporte"}
+          </button>
         </form>
       </div>
     </div>

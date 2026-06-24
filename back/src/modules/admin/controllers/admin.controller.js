@@ -1,3 +1,5 @@
+import { subirArchivoCloudinary } from "../../../shared/utils/cloudinaryUpload.js";
+
 import {
 
   getUsersService,
@@ -12,6 +14,8 @@ import {
 
   getCategoriesService,
 
+  getActiveCategoriesService,
+
   createCategoryService,
 
   updateCategoryService,
@@ -21,6 +25,8 @@ import {
   enableCategoryService
 
 } from "../services/admin.service.js";
+
+
 /*
 |--------------------------------------------------------------
 | Obtener usuarios
@@ -166,7 +172,7 @@ export const unblockUser =
     }
 
   };
-  /*
+/*
 |--------------------------------------------------------------
 | Crear usuario
 |--------------------------------------------------------------
@@ -201,7 +207,7 @@ export const createUser =
     }
 
   };
-  export const getCategories =
+export const getCategories =
   async (
     req,
     res,
@@ -228,7 +234,7 @@ export const createUser =
     }
 
   };
-  export const createCategory =
+export const createCategory =
   async (
     req,
     res,
@@ -237,9 +243,17 @@ export const createUser =
 
     try {
 
+      let imagenUrl = null;
+
+      if (req.file) {
+        const resultado = await subirArchivoCloudinary(req.file, "urbanlog/categorias");
+        imagenUrl = resultado.url;
+      }
+
       const categoria =
         await createCategoryService(
-          req.body.nombre
+          req.body.nombre,
+          imagenUrl
         );
 
       res.status(201).json({
@@ -257,7 +271,7 @@ export const createUser =
     }
 
   };
-  /*
+/*
 |--------------------------------------------------------------
 | Editar categoría
 |--------------------------------------------------------------
@@ -358,6 +372,34 @@ export const enableCategory =
         ok: true,
 
         categoria
+
+      });
+
+    } catch (error) {
+
+      next(error);
+
+    }
+
+  };
+
+  export const getActiveCategories =
+  async (
+    req,
+    res,
+    next
+  ) => {
+
+    try {
+
+      const categorias =
+        await getActiveCategoriesService();
+
+      res.status(200).json({
+
+        ok: true,
+
+        categorias
 
       });
 

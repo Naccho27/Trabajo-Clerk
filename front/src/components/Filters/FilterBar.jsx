@@ -1,19 +1,24 @@
 import { icons } from "../../assets/icons/icons.js";
-
-const categorias = [
-  { id: "todos", label: "Todos", icon: icons.todos },
-  { id: "baches", label: "Bache", icon: icons.baches },
-  { id: "residuos", label: "Residuos", icon: icons.residuos },
-  { id: "alumbrado", label: "Alumbrado", icon: icons.alumbrado },
-  { id: "semaforo", label: "Semáforo", icon: icons.semaforo },
-  { id: "inundacion", label: "Inundación", icon: icons.inundacion },
-];
+import { useCategorias } from "../../context/CategoriasContext.jsx";
 
 export default function FilterBar({ filtroActivo, onFiltroChange }) {
+  const { categorias, loading } = useCategorias();
+
+  if (loading) return null;
+
+  const opciones = [
+    { id: "todos", label: "Todos", icon: icons.todos },
+    ...categorias.map((cat) => ({
+      id: cat.nombre,
+      label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
+      icon: cat.imagen || icons.todos,
+    })),
+  ];
+
   return (
     <div className="absolute bottom-20 left-0 right-0 z-[1000] flex justify-center px-4">
       <div className="bg-white shadow-lg rounded-3xl flex items-center justify-around px-2 py-3 overflow-x-auto w-full max-w-2xl">
-        {categorias.map((cat) => (
+        {opciones.map((cat) => (
           <button
             key={cat.id}
             onClick={() => onFiltroChange(cat.id)}

@@ -1,14 +1,17 @@
 import { Router }
-from "express";
+  from "express";
 
 import authMiddleware
-from "../../auth/middlewares/auth.middleware.js";
+  from "../../auth/middlewares/auth.middleware.js";
 
 import { requireRole }
-from "../../../shared/middlewares/requireRole.js";
+  from "../../../shared/middlewares/requireRole.js";
 
 import { validate }
-from "../../../shared/middlewares/validate.middleware.js";
+  from "../../../shared/middlewares/validate.middleware.js";
+
+import { upload }
+  from "../../../shared/middlewares/upload.middleware.js";
 
 import {
 
@@ -23,9 +26,11 @@ import {
   createUser,
 
   getCategories,
-  
+
+  getActiveCategories,
+
   createCategory,
-  
+
   updateCategory,
 
   disableCategory,
@@ -39,6 +44,26 @@ import {
 } from "../validators/admin.validator.js";
 
 const router = Router();
+
+/*
+|--------------------------------------------------------------
+| Pública - listar categorías activas
+|--------------------------------------------------------------
+*/
+
+router.get(
+  "/categories/active",
+  getActiveCategories
+);
+
+/*
+|--------------------------------------------------------------
+| A partir de aquí, todo requiere admin
+|--------------------------------------------------------------
+*/
+
+router.use(authMiddleware);
+router.use(requireRole("admin"));
 
 /*
 |--------------------------------------------------------------
@@ -102,7 +127,6 @@ router.patch(
   unblockUser
 );
 
-
 router.get(
   "/categories",
   getCategories
@@ -110,6 +134,7 @@ router.get(
 
 router.post(
   "/categories",
+  upload.single("imagen"),
   createCategory
 );
 
@@ -121,6 +146,7 @@ router.post(
 
 router.patch(
   "/categories/:id",
+  upload.single("imagen"),
   updateCategory
 );
 

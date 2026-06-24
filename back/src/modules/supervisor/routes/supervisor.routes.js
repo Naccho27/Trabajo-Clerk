@@ -1,11 +1,6 @@
 import { Router } from "express";
 
 import {
-  clerkMiddleware,
-  requireAuth,
-} from "@clerk/express";
-
-import {
   obtenerPendientes,
   obtenerReportesSupervisor,
   aprobarReporte,
@@ -27,10 +22,6 @@ const router = Router();
 | Middlewares
 |--------------------------------------------------------------------------
 */
-
-router.use(clerkMiddleware());
-
-router.use(requireAuth());
 
 router.use(
   requireRole(

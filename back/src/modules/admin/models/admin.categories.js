@@ -10,6 +10,11 @@ const categoriaSchema = new mongoose.Schema(
       lowercase: true
     },
 
+    imagen: {
+      type: String,
+      default: ""
+    },
+
     activa: {
       type: Boolean,
       default: true
