@@ -1,5 +1,5 @@
 import Usuario from "../models/Usuario.js";
-import Comentario from "../models/Comentario.js"; // 👈 nuevo import
+import Comentario from "../models/Comentario.js";
 
 import {
   crearReporteService,
@@ -55,7 +55,17 @@ export const crearReporte = async (req, res) => {
       modoAnonimo: !usuario,
     });
 
-        if (nuevoReporte.duplicado) {
+    // 👇 contenido inválido (insultos o incoherencias)
+    if (nuevoReporte.invalido) {
+      return res.status(400).json({
+        ok: false,
+        invalido: true,
+        mensaje: nuevoReporte.motivo,
+      });
+    }
+
+    // 👇 duplicado
+    if (nuevoReporte.duplicado) {
       return res.status(200).json({
         ok: true,
         duplicado: true,
@@ -64,7 +74,7 @@ export const crearReporte = async (req, res) => {
         mensaje: nuevoReporte.mensaje,
       });
     }
-    
+
     res.status(201).json({ ok: true, reporte: nuevoReporte });
   } catch (error) {
     console.log(error);
@@ -89,7 +99,7 @@ export const obtenerReportesPublicos = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| Obtener por ID — 👇 ahora incluye comentarios
+| Obtener por ID
 |--------------------------------------------------------------------------
 */
 
@@ -101,7 +111,6 @@ export const obtenerReportePorId = async (req, res) => {
       return res.status(404).json({ ok: false, mensaje: "Reporte no encontrado" });
     }
 
-    // 👇 traer comentarios públicos del reporte
     const comentarios = await Comentario.find({ reporteId: req.params.id })
       .populate("usuarioId", "nombreUsuario imagenPerfil rol")
       .sort({ createdAt: 1 });
