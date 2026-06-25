@@ -25,18 +25,18 @@ export default function BarrasCategoria({ reportes, titulo = "Reportes por categ
 
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm"
+      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm"
       style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}
     >
-      <p className="text-sm font-medium text-gray-700 mb-4">{titulo}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">{titulo}</p>
       <div className="flex flex-col gap-3">
         {data.map((item) => {
           const pct = Math.round((item.total / max) * 100);
           return (
             <div key={item.name} className="flex items-center gap-3">
               <img src={icons[item.name]} className="w-5 h-5 shrink-0" alt={item.label} />
-              <span className="text-xs text-gray-500 w-20 shrink-0">{item.label}</span>
-              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-20 shrink-0">{item.label}</span>
+              <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -46,7 +46,7 @@ export default function BarrasCategoria({ reportes, titulo = "Reportes por categ
                   }}
                 />
               </div>
-              <span className="text-xs font-semibold text-gray-600 w-4 text-right shrink-0">{item.total}</span>
+              <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 w-4 text-right shrink-0">{item.total}</span>
             </div>
           );
         })}

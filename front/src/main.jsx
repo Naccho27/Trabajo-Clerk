@@ -7,6 +7,7 @@ import "./index.css";
 import App from "./App.jsx";
 import { UserProvider } from "./context/UserContext.jsx";
 import { CategoriasProvider } from "./context/CategoriasContext.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 
 createRoot(
   document.getElementById("root")
@@ -20,7 +21,9 @@ createRoot(
       <BrowserRouter>
         <UserProvider>
           <CategoriasProvider>
-            <App />
+            <ThemeProvider>
+              <App />
+            </ThemeProvider>
           </CategoriasProvider>
         </UserProvider>
       </BrowserRouter>

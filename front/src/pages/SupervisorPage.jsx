@@ -75,18 +75,18 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
   return (
     <>
       <tr
-        className={`cursor-pointer hover:bg-gray-50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"} ${expandido ? "bg-blue-50/30" : ""}`}
+        className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"} ${expandido ? "bg-blue-50/30 dark:bg-blue-900/20" : ""}`}
         style={{ animation: `fadeInUp 0.3s ease-out ${index * 40}ms both` }}
         onClick={() => { setExpandido(!expandido); setMostrarCats(false); setMostrarPrios(false); }}
       >
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <img src={getIconoCategoria(reporte.categoria)} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
-            <span className="font-medium text-gray-800">{reporte.titulo}</span>
+            <span className="font-medium text-gray-800 dark:text-gray-100">{reporte.titulo}</span>
           </div>
         </td>
-        <td className="px-4 py-3 text-gray-500 text-xs">{reporte.ubicacion?.direccion ?? "Sin dirección"}</td>
-        <td className="px-4 py-3 capitalize text-gray-500">{reporte.categoria}</td>
+        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{reporte.ubicacion?.direccion ?? "Sin dirección"}</td>
+        <td className="px-4 py-3 capitalize text-gray-500 dark:text-gray-400">{reporte.categoria}</td>
         <td className="px-4 py-3">
           {prioridad && (
             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -95,51 +95,51 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
             </span>
           )}
         </td>
-        <td className="px-4 py-3 text-gray-400 text-xs">{formatearFecha(reporte.createdAt)}</td>
+        <td className="px-4 py-3 text-gray-400 dark:text-gray-500 text-xs">{formatearFecha(reporte.createdAt)}</td>
         <td className="px-4 py-3">
-          <span className={`text-gray-400 transition-transform inline-block ${expandido ? "rotate-90" : ""}`}>→</span>
+          <span className={`text-gray-400 dark:text-gray-500 transition-transform inline-block ${expandido ? "rotate-90" : ""}`}>→</span>
         </td>
       </tr>
 
       {expandido && (
-        <tr className="bg-blue-50/20">
+        <tr className="bg-blue-50/20 dark:bg-blue-900/10">
           <td colSpan={6} className="px-6 py-4">
             <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.3s ease-out" }}>
               <div className="flex items-start gap-4">
                 <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-medium mb-1">Descripción</p>
-                  <p className="text-sm text-gray-700">{reporte.descripcion}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-medium mb-1">Descripción</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{reporte.descripcion}</p>
                 </div>
 
-                {reporte.usuarioId && (
-                  <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm">
-                    {(reporte.usuarioId.imagenPerfil || reporte.usuarioId.clerkImageUrl) && !imgError ? (
-                      <img
-                        src={reporte.usuarioId.imagenPerfil || reporte.usuarioId.clerkImageUrl}
-                        className="w-8 h-8 rounded-full object-cover"
-                        alt="usuario"
-                        onError={() => setImgError(true)}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
-                        {reporte.usuarioId.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
-                      <p className="text-xs text-gray-400 capitalize">
-                        {reporte.usuarioId.roles?.join(", ")}
-                      </p>
-                    </div>
-                  </div>
-                )}
+{reporte.usuarioId && (
+  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-xl px-3 py-2 shadow-sm">
+    {(reporte.usuarioId.imagenPerfil || reporte.usuarioId.clerkImageUrl) && !imgError ? (
+      <img
+        src={reporte.usuarioId.imagenPerfil || reporte.usuarioId.clerkImageUrl}
+        className="w-8 h-8 rounded-full object-cover"
+        alt="usuario"
+        onError={() => setImgError(true)}
+      />
+    ) : (
+      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
+        {reporte.usuarioId.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
+      </div>
+    )}
+    <div>
+      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{reporte.usuarioId.nombreUsuario}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">
+        {reporte.usuarioId.roles?.join(", ")}
+      </p>
+    </div>
+  </div>
+)}
               </div>
 
               {reporte.imagenes?.length > 0 && (
                 <div className="flex gap-2 flex-wrap">
                   {reporte.imagenes.map((img, i) => (
                     <img key={i} src={img} alt={`img-${i}`}
-                      className="h-24 w-36 object-cover rounded-xl border border-gray-100" />
+                      className="h-24 w-36 object-cover rounded-xl border border-gray-100 dark:border-gray-700" />
                   ))}
                 </div>
               )}
@@ -148,19 +148,19 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMostrarCats(!mostrarCats); setMostrarPrios(false); }}
-                    className="border border-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                    className="border border-gray-200 dark:border-gray-700 rounded-full px-4 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     Categoría: <span className="capitalize font-medium">{reporte.categoria}</span> ▾
                   </button>
                   {mostrarCats && (
-                    <div className="absolute top-9 left-0 z-[100] bg-white rounded-2xl shadow-lg p-3 grid grid-cols-3 gap-2 w-56"
+                    <div className="absolute top-9 left-0 z-[100] bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-3 grid grid-cols-3 gap-2 w-56"
                       onClick={(e) => e.stopPropagation()}>
                       {categorias.map((cat) => (
                         <button key={cat._id}
                           onClick={() => { onCambiarCategoria(reporte._id, cat.nombre); setMostrarCats(false); }}
-                          className="flex flex-col items-center gap-1 p-2 hover:bg-gray-50 rounded-xl">
+                          className="flex flex-col items-center gap-1 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
                           <img src={cat.imagen || icons[cat.nombre]} className="w-7 h-7" alt={cat.nombre} />
-                          <span className="text-xs capitalize text-gray-600">{cat.nombre}</span>
+                          <span className="text-xs capitalize text-gray-600 dark:text-gray-300">{cat.nombre}</span>
                         </button>
                       ))}
                     </div>
@@ -170,12 +170,12 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMostrarPrios(!mostrarPrios); setMostrarCats(false); }}
-                    className="border border-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                    className="border border-gray-200 dark:border-gray-700 rounded-full px-4 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     Prioridad: <span className="font-medium" style={{ color: prioridad?.color }}>{prioridad?.label}</span> ▾
                   </button>
                   {mostrarPrios && (
-                    <div className="absolute top-9 left-0 z-[100] bg-white rounded-2xl shadow-lg p-3 grid grid-cols-2 gap-2 w-44"
+                    <div className="absolute top-9 left-0 z-[100] bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-3 grid grid-cols-2 gap-2 w-44"
                       onClick={(e) => e.stopPropagation()}>
                       {PRIORIDADES.map((p) => {
                         const cfg = PRIORIDAD_CONFIG[p];
@@ -306,18 +306,18 @@ export default function SupervisorPage() {
           <FiltrosTabla filtros={filtros} onChange={setFiltros} mostrarEstado={false} />
           {reportesFiltrados.length === 0 ? (
             <div className="flex items-center justify-center h-40">
-              <p className="text-sm text-gray-400">No hay incidentes pendientes</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">No hay incidentes pendientes</p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm overflow-visible">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-visible">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                   <tr>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Reporte</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Ubicación</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Categoría</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Prioridad</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Fecha</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Reporte</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Ubicación</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Categoría</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Prioridad</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Fecha</th>
                     <th />
                   </tr>
                 </thead>
