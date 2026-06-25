@@ -10,6 +10,7 @@ import ActividadReciente from "../components/Panel/ActividadReciente.jsx";
 import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
 import FiltrosTabla from "../components/Panel/FiltrosTabla.jsx";
 import PageHeader from "../components/Panel/PageHeader.jsx";
+import { useCategorias } from "../context/CategoriasContext.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -67,6 +68,9 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
   const [loadingCom, setLoadingCom] = useState(false);
   const [loadingAcc, setLoadingAcc] = useState(false);
   const [cargado, setCargado] = useState(false);
+  const { categorias } = useCategorias();
+  const getIconoCategoria = (nombre) =>
+    categorias.find(c => c.nombre === nombre)?.imagen || icons[nombre];
 
   const prioridad = PRIORIDAD_CONFIG[reporte.prioridad];
   const estado = ESTADO_CONFIG[reporte.estado];
@@ -130,8 +134,12 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setComentario("");
-      setCargado(false);
-      await cargarComentarios();
+      // 👇 forzar recarga directamente sin depender del estado cargado
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_API_URL}/operator/reportes/${reporte._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setComentarios(data.comentarios || []);
     } catch (err) { console.error(err); }
     finally { setLoadingCom(false); }
   };
@@ -145,7 +153,7 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
       >
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
-            <img src={icons[reporte.categoria]} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
+            <img src={getIconoCategoria(reporte.categoria)} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
             <span className="font-medium text-gray-800">{reporte.titulo}</span>
           </div>
         </td>
@@ -196,9 +204,18 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
                   <p className="text-xs text-gray-400 font-medium">Comentarios</p>
                   {comentarios.map((c, i) => (
                     <div key={i} className="bg-white rounded-xl px-4 py-2.5 flex items-start gap-3 shadow-sm">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600 shrink-0">
-                        {c.usuarioId?.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
-                      </div>
+                      {c.usuarioId?.imagenPerfil ? (
+                        <img
+                          src={c.usuarioId.imagenPerfil}
+                          className="w-6 h-6 rounded-full object-cover shrink-0"
+                          alt={c.usuarioId.nombreUsuario}
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600 shrink-0">
+                          {c.usuarioId?.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                      )}
+
                       <div className="flex-1">
                         <p className="text-xs font-medium text-gray-700">{c.usuarioId?.nombreUsuario ?? "Operador"}</p>
                         <p className="text-sm text-gray-600">{c.mensaje}</p>

@@ -42,13 +42,18 @@ function MapPage() {
 
 function MapPagePublic() {
   const [filtro, setFiltro] = useState("todos");
+  const [modoMapa, setModoMapa] = useState("normal");
+
+  const handleToggleMapa = () => {
+    setModoMapa(prev => prev === "normal" ? "calor" : "normal");
+  };
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
       <Header />
-      <MapView filtro={filtro} modoCrear={false} onCancelarCrear={() => {}} modoMapa="normal" />
+      <MapView filtro={filtro} modoCrear={false} onCancelarCrear={() => {}} modoMapa={modoMapa} />
       <FilterBar filtroActivo={filtro} onFiltroChange={setFiltro} />
-      <NavbarPublic />
+      <NavbarPublic modoMapa={modoMapa} onToggleMapa={handleToggleMapa} />
     </div>
   );
 }

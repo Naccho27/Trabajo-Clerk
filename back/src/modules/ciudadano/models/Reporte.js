@@ -126,8 +126,6 @@ const reporteSchema = new mongoose.Schema(
     categoria: {
       type: String,
 
-      enum: CATEGORIAS_INCIDENTES,
-
       required: true,
     },
 

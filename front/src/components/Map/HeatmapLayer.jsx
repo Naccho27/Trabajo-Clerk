@@ -4,9 +4,9 @@ import L from "leaflet";
 import "leaflet.heat";
 
 const PESO_PRIORIDAD = {
-  low:      0.25,
-  medium:   0.5,
-  high:     0.75,
+  low: 0.25,
+  medium: 0.5,
+  high: 0.75,
   critical: 1.0,
 };
 
@@ -30,10 +30,18 @@ export default function HeatmapLayer({ reportes }) {
       ]);
 
     const heatLayer = L.heatLayer(puntos, {
-      radius: 25,
-      blur: 15,
+      radius: 60,
+      blur: 40,
       maxZoom: 17,
-      gradient: { 0.4: "blue", 0.6: "cyan", 0.7: "lime", 0.8: "yellow", 1.0: "red" },
+      minOpacity: 0.5,
+      gradient: {
+        0.0: "transparent",
+        0.3: "#3b3bff",
+        0.5: "#a855f7",
+        0.7: "#f97316",
+        0.9: "#ef4444",
+        1.0: "#7f1d1d",
+      },
     });
 
     heatLayer.addTo(map);

@@ -7,18 +7,10 @@ import SearchBar from "./SearchBar";
 import ReportModal from "../Report/ReportModal.jsx";
 import ReportDetailModal from "../Report/ReportDetailModal.jsx";
 import { icons } from "../../assets/icons/icons.js";
+import { useCategorias } from "../../context/CategoriasContext.jsx";
 import HeatmapLayer from "./HeatmapLayer";
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-const iconos = {
-  baches:    new L.Icon({ iconUrl: icons.baches,    iconSize: [35, 35] }),
-  residuos:  new L.Icon({ iconUrl: icons.residuos,  iconSize: [35, 35] }),
-  alumbrado: new L.Icon({ iconUrl: icons.alumbrado, iconSize: [35, 35] }),
-  semaforo:  new L.Icon({ iconUrl: icons.semaforo,  iconSize: [35, 35] }),
-  inundacion:new L.Icon({ iconUrl: icons.inundacion,iconSize: [35, 35] }),
-  todos:     new L.Icon({ iconUrl: icons.todos,     iconSize: [35, 35] }),
-};
 
 const VILLA_MARIA = [-32.4149, -63.2386];
 
@@ -34,11 +26,27 @@ function ClickHandler({ modoCrear, onMapClick }) {
 }
 
 export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, modoMapa = "normal" }) {
+  const { categorias } = useCategorias();
   const [reportes, setReportes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReporteId, setSelectedReporteId] = useState(null);
+
+  const getIconoUrl = (nombreCategoria) =>
+    categorias.find(c => c.nombre === nombreCategoria)?.imagen || icons[nombreCategoria] || icons.todos;
+
+  const iconos = useMemo(() => {
+    const mapa = {};
+    categorias.forEach((cat) => {
+      mapa[cat.nombre] = new L.Icon({
+        iconUrl: cat.imagen || icons[cat.nombre] || icons.todos,
+        iconSize: [35, 35],
+      });
+    });
+    mapa.todos = new L.Icon({ iconUrl: icons.todos, iconSize: [35, 35] });
+    return mapa;
+  }, [categorias]);
 
   const cargarReportes = async () => {
     try {
@@ -92,7 +100,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
           <Popup minWidth={200}>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <img src={icons[reporte.categoria]} className="w-6 h-6" alt={reporte.categoria} />
+                <img src={getIconoUrl(reporte.categoria)} className="w-6 h-6" alt={reporte.categoria} />
                 <span className="text-xs text-gray-400 capitalize">{reporte.categoria}</span>
               </div>
               <h3 className="font-bold text-sm leading-tight">{reporte.titulo}</h3>
@@ -115,7 +123,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
           </Popup>
         </Marker>
       ))
-  ), [reportesVisibles]);
+  ), [reportesVisibles, iconos]);
 
   if (loading) {
     return (

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
+import { useCategorias } from "../../context/CategoriasContext.jsx";
 import ReportDetailModal from "../Report/ReportDetailModal.jsx";
 import EditReportModal from "../Report/EditReportModal.jsx";
 
@@ -14,6 +15,7 @@ const ESTADO_BADGE = {
 
 export default function MisReportesModal({ onClose }) {
   const { getToken } = useAuth();
+  const { categorias } = useCategorias();
   const [reportes, setReportes]             = useState([]);
   const [loading, setLoading]               = useState(true);
   const [closing, setClosing]               = useState(false);
@@ -21,6 +23,11 @@ export default function MisReportesModal({ onClose }) {
   const [editReporte, setEditReporte]       = useState(null);
   const [confirmEliminar, setConfirmEliminar] = useState(null);
   const [eliminando, setEliminando]         = useState(false);
+
+  const getIcono = (nombre) => {
+    const cat = categorias.find(c => c.nombre === nombre);
+    return cat?.imagen || icons[nombre] || icons.todos;
+  };
 
   const cargar = async () => {
     try {
@@ -93,7 +100,7 @@ export default function MisReportesModal({ onClose }) {
                 <div key={reporte._id} className="flex flex-col py-2 border-b border-gray-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img src={icons[reporte.categoria]} className="w-8 h-8" alt={reporte.categoria} />
+                      <img src={getIcono(reporte.categoria)} className="w-8 h-8" alt={reporte.categoria} />
                       <div>
                         <p className="text-sm font-medium text-gray-800">{reporte.titulo}</p>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -116,7 +123,6 @@ export default function MisReportesModal({ onClose }) {
                     </button>
                   </div>
 
-                  {/* Acciones solo para pendientes */}
                   {esPendiente && (
                     <div className="flex gap-2 mt-2 ml-11">
                       <button
@@ -139,7 +145,6 @@ export default function MisReportesModal({ onClose }) {
           </div>
         )}
 
-        {/* Confirm eliminar */}
         {confirmEliminar && (
           <div className="fixed inset-0 z-[1004] bg-black/40 flex items-center justify-center px-4">
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -165,7 +170,6 @@ export default function MisReportesModal({ onClose }) {
           </div>
         )}
 
-        {/* Modal detalle */}
         {selectedReporteId && (
           <ReportDetailModal
             reporteId={selectedReporteId}
@@ -173,7 +177,6 @@ export default function MisReportesModal({ onClose }) {
           />
         )}
 
-        {/* Modal editar */}
         {editReporte && (
           <EditReportModal
             reporte={editReporte}

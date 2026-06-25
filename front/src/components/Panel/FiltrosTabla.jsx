@@ -31,14 +31,6 @@ export default function FiltrosTabla({ filtros, onChange, mostrarEstado = false 
         ))}
       </select>
 
-      {mostrarEstado && (
-        <select value={filtros.estado} onChange={(e) => set("estado", e.target.value)} className={selectClass}>
-          <option value="">Todos los estados</option>
-          {Object.entries(ESTADO_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-      )}
 
       <div className="flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-1.5 bg-white">
         <span className="text-xs text-gray-400 font-medium">Desde</span>

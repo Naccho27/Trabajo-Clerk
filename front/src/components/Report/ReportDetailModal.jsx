@@ -3,22 +3,23 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { icons } from "../../assets/icons/icons.js";
+import { useCategorias } from "../../context/CategoriasContext.jsx";
 import ProfileModal from "../Profile/ProfileModal.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const PRIORIDAD_BADGE = {
-  low:      { bg: "bg-gray-100",   text: "text-gray-600",   label: "Baja" },
-  medium:   { bg: "bg-blue-100",   text: "text-blue-800",   label: "Media" },
-  high:     { bg: "bg-amber-100",  text: "text-amber-800",  label: "Alta" },
-  critical: { bg: "bg-red-100",    text: "text-red-700",    label: "Crítica" },
+  low: { bg: "bg-gray-100", text: "text-gray-600", label: "Baja" },
+  medium: { bg: "bg-blue-100", text: "text-blue-800", label: "Media" },
+  high: { bg: "bg-amber-100", text: "text-amber-800", label: "Alta" },
+  critical: { bg: "bg-red-100", text: "text-red-700", label: "Crítica" },
 };
 
 const ESTADO_BADGE = {
-  open:        { bg: "bg-gray-100",   text: "text-gray-600",   label: "Pendiente" },
+  open: { bg: "bg-gray-100", text: "text-gray-600", label: "Pendiente" },
   in_progress: { bg: "bg-yellow-100", text: "text-yellow-800", label: "En progreso" },
-  resolved:    { bg: "bg-green-100",  text: "text-green-800",  label: "Resuelto" },
-  rejected:    { bg: "bg-red-100",    text: "text-red-700",    label: "Rechazado" },
+  resolved: { bg: "bg-green-100", text: "text-green-800", label: "Resuelto" },
+  rejected: { bg: "bg-red-100", text: "text-red-700", label: "Rechazado" },
 };
 
 function Badge({ config }) {
@@ -32,11 +33,15 @@ function Badge({ config }) {
 
 export default function ReportDetailModal({ reporteId, onClose }) {
   const { getToken } = useAuth();
+  const { categorias } = useCategorias();
   const [reporte, setReporte] = useState(null);
   const [comentarios, setComentarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [showAutorPerfil, setShowAutorPerfil] = useState(false);
+
+  const getIconoCategoria = (nombre) =>
+    categorias.find(c => c.nombre === nombre)?.imagen || icons[nombre] || icons.todos;
 
   useEffect(() => {
     const cargar = async () => {
@@ -83,7 +88,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <img src={icons[reporte.categoria]} className="w-9 h-9" alt={reporte.categoria} />
+                <img src={getIconoCategoria(reporte.categoria)} className="w-9 h-9" alt={reporte.categoria} />
                 <div>
                   <p className="text-xs text-gray-400 capitalize">{reporte.categoria}</p>
                   <p className="text-base font-semibold text-gray-800">{reporte.titulo}</p>
@@ -143,7 +148,7 @@ export default function ReportDetailModal({ reporteId, onClose }) {
             {reporte.categoriaIA && reporte.categoriaIA !== reporte.categoria && (
               <div className="mb-4">
                 <span className="bg-blue-50 text-blue-500 text-xs font-medium px-3 py-1 rounded-full">
-                  🤖 IA sugiere: {reporte.categoriaIA}
+                  IA sugiere: {reporte.categoriaIA}
                 </span>
               </div>
             )}
@@ -214,9 +219,11 @@ export default function ReportDetailModal({ reporteId, onClose }) {
                   {reporte.usuarioId.imagenPerfil ? (
                     <img src={reporte.usuarioId.imagenPerfil} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
+
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
                       {reporte.usuarioId.nombreUsuario?.[0]?.toUpperCase()}
                     </div>
+
                   )}
                   <div>
                     <p className="text-sm font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
@@ -246,9 +253,19 @@ export default function ReportDetailModal({ reporteId, onClose }) {
                   {comentarios.map((c, i) => (
                     <div key={i} className="bg-gray-50 rounded-2xl px-4 py-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
-                          {c.usuarioId?.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
-                        </div>
+                        
+                        {c.usuarioId?.imagenPerfil ? (
+                          <img
+                            src={c.usuarioId.imagenPerfil}
+                            className="w-6 h-6 rounded-full object-cover"
+                            alt={c.usuarioId.nombreUsuario}
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
+                            {c.usuarioId?.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
+                          </div>
+                        )}
+
                         <p className="text-xs font-medium text-gray-700">
                           {c.usuarioId?.nombreUsuario ?? "Operador"}
                         </p>

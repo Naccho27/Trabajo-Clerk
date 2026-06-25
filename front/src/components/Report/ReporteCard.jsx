@@ -1,4 +1,5 @@
 import { icons } from "../../assets/icons/icons.js";
+import { useCategorias } from "../../context/CategoriasContext.jsx";
 
 const ESTADO_CONFIG = {
   validated:   { bg: "bg-purple-100", text: "text-purple-800", label: "Validado" },
@@ -15,8 +16,14 @@ const PRIORIDAD_CONFIG = {
 };
 
 export default function ReporteCard({ reporte, onClick, mostrarEstado = true, delay = "0ms" }) {
+  const { categorias } = useCategorias();
   const estado = ESTADO_CONFIG[reporte.estado];
   const prioridad = PRIORIDAD_CONFIG[reporte.prioridad];
+
+  const getIcono = (nombre) => {
+    const cat = categorias.find(c => c.nombre === nombre);
+    return cat?.imagen || icons[nombre] || icons.todos;
+  };
 
   return (
     <div
@@ -25,7 +32,7 @@ export default function ReporteCard({ reporte, onClick, mostrarEstado = true, de
       style={{ animation: `fadeInUp 0.4s ease-out ${delay} both` }}
     >
       <div className="flex items-center gap-4">
-        <img src={icons[reporte.categoria]} className="w-12 h-12" alt={reporte.categoria} />
+        <img src={getIcono(reporte.categoria)} className="w-12 h-12" alt={reporte.categoria} />
         <div>
           <p className="text-base font-semibold text-gray-800 mb-0.5">{reporte.titulo}</p>
           <p className="text-sm text-gray-400 mb-2">

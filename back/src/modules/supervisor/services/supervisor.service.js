@@ -93,7 +93,8 @@ export const obtenerReportesSupervisorService =
 
       .populate(
         "usuarioId",
-        "nombreUsuario email"
+        "nombreUsuario email imagenPerfil"
+
       )
 
       .sort({

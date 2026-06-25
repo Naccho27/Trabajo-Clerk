@@ -8,7 +8,7 @@ const ACCIONES = {
   crear:       "crear un reporte",
 };
 
-export default function NavbarPublic() {
+export default function NavbarPublic({ modoMapa, onToggleMapa }) {
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ export default function NavbarPublic() {
 
   return (
     <>
-      {/* Toast */}
       {toast && (
         <div className="absolute top-32 left-0 right-0 z-[1100] flex justify-center px-4">
           <div
@@ -42,10 +41,20 @@ export default function NavbarPublic() {
       )}
 
       <div className="absolute bottom-0 left-0 right-0 z-[1000] flex justify-center">
-        <div className="bg-white shadow-lg rounded-t-3xl flex items-center justify-around px-4 py-3 w-full max-w-4xl">
-          <button className="flex flex-col items-center gap-1">
-            <span className="text-xl">🗺️</span>
-            <span className="text-xs text-blue-500 font-semibold">Mapa</span>
+        <div className="bg-white shadow-lg rounded-t-3xl flex items-center justify-around px-8 py-4 w-full">
+
+          <button
+            onClick={onToggleMapa}
+            className="flex flex-col items-center gap-1"
+          >
+            <span className="text-xl">{modoMapa === "calor" ? "🌡️" : "🗺️"}</span>
+            <span className="text-xs font-semibold" style={
+              modoMapa === "calor"
+                ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }
+                : { color: "#3b82f6" }
+            }>
+              {modoMapa === "calor" ? "Calor" : "Mapa"}
+            </span>
           </button>
 
           <button
@@ -79,6 +88,7 @@ export default function NavbarPublic() {
             <span className="text-xl">👤</span>
             <span className="text-xs text-gray-500">Perfil</span>
           </button>
+
         </div>
       </div>
     </>

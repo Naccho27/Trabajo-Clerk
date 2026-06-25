@@ -15,7 +15,7 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
   const categorias = categoriasBD.map(cat => ({
     id: cat.nombre,
     label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
-    icon: icons[cat.nombre] ?? icons.todos,
+    icon: cat.imagen || icons[cat.nombre] || icons.todos,
   }));
 
   const [titulo, setTitulo]           = useState(reporte.titulo);

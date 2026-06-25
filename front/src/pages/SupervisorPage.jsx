@@ -21,9 +21,9 @@ import {
 const PRIORIDADES = ["low", "medium", "high", "critical"];
 
 const PRIORIDAD_CONFIG = {
-  low:      { label: "Baja",    color: "#888780", bg: "#88878015" },
-  medium:   { label: "Media",   color: "#378ADD", bg: "#378ADD15" },
-  high:     { label: "Alta",    color: "#BA7517", bg: "#BA751715" },
+  low: { label: "Baja", color: "#888780", bg: "#88878015" },
+  medium: { label: "Media", color: "#378ADD", bg: "#378ADD15" },
+  high: { label: "Alta", color: "#BA7517", bg: "#BA751715" },
   critical: { label: "Crítica", color: "#E24B4A", bg: "#E24B4A15" },
 };
 
@@ -65,6 +65,7 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
   const [expandido, setExpandido] = useState(false);
   const [mostrarCats, setMostrarCats] = useState(false);
   const [mostrarPrios, setMostrarPrios] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const { categorias } = useCategorias();
   const prioridad = PRIORIDAD_CONFIG[reporte.prioridad];
 
@@ -109,12 +110,21 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                   <p className="text-xs text-gray-400 font-medium mb-1">Descripción</p>
                   <p className="text-sm text-gray-700">{reporte.descripcion}</p>
                 </div>
+
                 {reporte.usuarioId && (
                   <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm">
-                    <img
-                      src={reporte.usuarioId.imagenPerfil || "https://via.placeholder.com/32"}
-                      className="w-8 h-8 rounded-full object-cover" alt="usuario"
-                    />
+                    {(reporte.usuarioId.imagenPerfil || reporte.usuarioId.clerkImageUrl) && !imgError ? (
+                      <img
+                        src={reporte.usuarioId.imagenPerfil || reporte.usuarioId.clerkImageUrl}
+                        className="w-8 h-8 rounded-full object-cover"
+                        alt="usuario"
+                        onError={() => setImgError(true)}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600">
+                        {reporte.usuarioId.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
+                      </div>
+                    )}
                     <div>
                       <p className="text-xs font-medium text-gray-700">{reporte.usuarioId.nombreUsuario}</p>
                       <p className="text-xs text-gray-400 capitalize">
@@ -135,7 +145,6 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
               )}
 
               <div className="flex items-center gap-3 flex-wrap">
-                {/* Cambiar categoría */}
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMostrarCats(!mostrarCats); setMostrarPrios(false); }}
@@ -158,7 +167,6 @@ function FilaExpandible({ reporte, onAprobar, onRechazar, onCambiarCategoria, on
                   )}
                 </div>
 
-                {/* Cambiar prioridad */}
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMostrarPrios(!mostrarPrios); setMostrarCats(false); }}
@@ -274,7 +282,7 @@ export default function SupervisorPage() {
   }).sort((a, b) => ORDEN_PRIORIDAD[a.prioridad] - ORDEN_PRIORIDAD[b.prioridad]);
 
   const sidebarItems = [
-    { id: "dashboard",  label: "Dashboard",  count: 0 },
+    { id: "dashboard", label: "Dashboard", count: 0 },
     { id: "pendientes", label: "Pendientes", count: reportes.length },
   ];
 

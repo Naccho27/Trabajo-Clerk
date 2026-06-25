@@ -10,6 +10,7 @@ import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
 import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import axios from "axios";
+import { useCategorias } from "../context/CategoriasContext.jsx";
 
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -432,6 +433,7 @@ export default function AdminPage() {
   const { user } = useUser();
   const navigate = useNavigate();
 
+  const { refrescarCategorias } = useCategorias();
   const [seccion, setSeccion] = useState("dashboard");
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -524,6 +526,7 @@ export default function AdminPage() {
       await axios.patch(`${API_URL}/admin/categories/${categoria._id}/${endpoint}`, {},
         { headers: { Authorization: `Bearer ${token}` } });
       cargarCategorias();
+      refrescarCategorias();
     } catch (error) {
       console.log("Error toggling categoría:", error);
     }
@@ -654,14 +657,14 @@ export default function AdminPage() {
       )}
 
       {mostrarModalCrearCat && (
-        <ModalCrearCategoria onClose={() => setMostrarModalCrearCat(false)} onSuccess={cargarCategorias} />
+        <ModalCrearCategoria onClose={() => setMostrarModalCrearCat(false)} onSuccess={() => { cargarCategorias(); refrescarCategorias(); }} />
       )}
 
       {categoriaEditando && (
         <ModalEditarCategoria
           categoria={categoriaEditando}
           onClose={() => setCategoriaEditando(null)}
-          onSuccess={cargarCategorias}
+          onSuccess={() => { cargarCategorias(); refrescarCategorias(); }}
         />
       )}
 
