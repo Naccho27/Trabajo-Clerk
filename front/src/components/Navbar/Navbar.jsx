@@ -3,12 +3,14 @@ import { useUser } from "@clerk/clerk-react";
 import ProfileModal from "../Profile/ProfileModal";
 import MisReportesModal from "../Report/MisReportesModal.jsx";
 import HistorialModal from "../Report/HistorialModal.jsx";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Navbar({ onCrearReporte, modoMapa, onToggleMapa }) {
   const [showProfile, setShowProfile] = useState(false);
   const [showMisReportes, setShowMisReportes] = useState(false);
   const [showHistorial, setShowHistorial] = useState(false);
   const { user } = useUser();
+  const { modoOscuro } = useTheme();
 
   return (
     <>
@@ -17,25 +19,25 @@ export default function Navbar({ onCrearReporte, modoMapa, onToggleMapa }) {
       {showHistorial && <HistorialModal onClose={() => setShowHistorial(false)} />}
 
       <div className="absolute bottom-0 left-0 right-0 z-[1000] flex justify-center">
-        <div className="bg-white shadow-lg rounded-t-3xl flex items-center justify-around px-8 py-4 w-full">
-          
-          <button
-            onClick={onToggleMapa}
-            className="flex flex-col items-center gap-1"
-          >
+        <div className="bg-white dark:bg-gray-900 shadow-lg rounded-t-3xl flex items-center justify-around px-8 py-4 w-full border-t border-gray-100 dark:border-gray-800">
+
+          <button onClick={onToggleMapa} className="flex flex-col items-center gap-1">
             <span className="text-xl">{modoMapa === "calor" ? "🌡️" : "🗺️"}</span>
-            <span className="text-xs font-semibold" style={
-              modoMapa === "calor"
-                ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }
-                : { color: "#3b82f6" }
-            }>
+            <span
+              className="text-xs font-semibold"
+              style={
+                modoMapa === "calor"
+                  ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }
+                  : { color: "#3b82f6" }
+              }
+            >
               {modoMapa === "calor" ? "Calor" : "Mapa"}
             </span>
           </button>
 
           <button onClick={() => setShowHistorial(true)} className="flex flex-col items-center gap-1">
             <span className="text-xl">🕐</span>
-            <span className="text-xs text-gray-500">Historial</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Historial</span>
           </button>
 
           <button
@@ -48,7 +50,7 @@ export default function Navbar({ onCrearReporte, modoMapa, onToggleMapa }) {
 
           <button onClick={() => setShowMisReportes(true)} className="flex flex-col items-center gap-1">
             <span className="text-xl">📋</span>
-            <span className="text-xs text-gray-500">Reportes</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Reportes</span>
           </button>
 
           <button onClick={() => setShowProfile(true)} className="flex flex-col items-center gap-1">
@@ -57,7 +59,7 @@ export default function Navbar({ onCrearReporte, modoMapa, onToggleMapa }) {
             ) : (
               <span className="text-xl">👤</span>
             )}
-            <span className="text-xs text-gray-500">Perfil</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Perfil</span>
           </button>
 
         </div>

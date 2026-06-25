@@ -13,7 +13,7 @@ const ESTADO_LABELS = {
 export default function FiltrosTabla({ filtros, onChange, mostrarEstado = false }) {
   const set = (key, val) => onChange({ ...filtros, [key]: val });
 
-  const selectClass = "border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 bg-white outline-none focus:border-blue-400 cursor-pointer";
+  const selectClass = "border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 outline-none focus:border-blue-400 cursor-pointer";
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -31,31 +31,30 @@ export default function FiltrosTabla({ filtros, onChange, mostrarEstado = false 
         ))}
       </select>
 
-
-      <div className="flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-1.5 bg-white">
-        <span className="text-xs text-gray-400 font-medium">Desde</span>
+      <div className="flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1.5 bg-white dark:bg-gray-800">
+        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">Desde</span>
         <input
           type="date"
           value={filtros.fechaDesde}
           onChange={(e) => set("fechaDesde", e.target.value)}
-          className="text-xs text-gray-600 outline-none bg-transparent cursor-pointer"
+          className="text-xs text-gray-600 dark:text-gray-300 outline-none bg-transparent cursor-pointer"
         />
       </div>
 
-      <div className="flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-1.5 bg-white">
-        <span className="text-xs text-gray-400 font-medium">Hasta</span>
+      <div className="flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1.5 bg-white dark:bg-gray-800">
+        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">Hasta</span>
         <input
           type="date"
           value={filtros.fechaHasta}
           onChange={(e) => set("fechaHasta", e.target.value)}
-          className="text-xs text-gray-600 outline-none bg-transparent cursor-pointer"
+          className="text-xs text-gray-600 dark:text-gray-300 outline-none bg-transparent cursor-pointer"
         />
       </div>
 
       {(filtros.categoria || filtros.prioridad || filtros.estado || filtros.fechaDesde || filtros.fechaHasta) && (
         <button
           onClick={() => onChange({ categoria: "", prioridad: "", estado: "", fechaDesde: "", fechaHasta: "" })}
-          className="text-xs text-red-400 hover:text-red-600 px-2"
+          className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 px-2"
         >
           Limpiar filtros ✕
         </button>

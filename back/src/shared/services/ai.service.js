@@ -2,48 +2,69 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-import { GoogleGenAI }
-from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
+import Categoria from "../../modules/admin/models/admin.categories.js"; // ⚠️ confirmá esta ruta según tu estructura real
 
-console.log(
-  "GEMINI API:",
-  process.env.GEMINI_API_KEY
-);
+console.log("GEMINI API:", process.env.GEMINI_API_KEY);
 
-const ai =
-  new GoogleGenAI({
-    apiKey:
-      process.env.GEMINI_API_KEY
-  });
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-const CATEGORIAS_VALIDAS = [
-  "baches",
-  "residuos",
-  "alumbrado",
-  "semaforo",
-  "inundacion"
-];
+// --- Cache de categorías en memoria (evita consultar Mongo en cada clasificación) ---
+let categoriasCache = null;
+let categoriasCacheTimestamp = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
 
-export const classifyIncident =
-  async (texto) => {
+async function getCategoriasActivas() {
+  const ahora = Date.now();
 
-    try {
+  if (categoriasCache && ahora - categoriasCacheTimestamp < CACHE_TTL_MS) {
+    return categoriasCache;
+  }
 
-      const prompt = `
+  const categorias = await Categoria
+    .find({ activa: true })
+    .select("nombre -_id")
+    .lean();
+
+  categoriasCache = categorias.map((c) => c.nombre);
+  categoriasCacheTimestamp = ahora;
+
+  return categoriasCache;
+}
+
+// Se llama desde admin.service.js cada vez que se crea/edita/activa/desactiva
+// una categoría, para que el cache no quede desactualizado hasta los 5 min.
+export function invalidateCategoriasCache() {
+  categoriasCache = null;
+}
+
+export const classifyIncident = async (texto) => {
+  try {
+    const nombresCategorias = await getCategoriasActivas();
+
+    if (!nombresCategorias.length) {
+      throw new Error("No hay categorías activas en la base de datos");
+    }
+
+    const listaCategoriasTexto = nombresCategorias
+      .map((n) => `- ${n}`)
+      .join("\n");
+
+    const prompt = `
 Clasifica este incidente en UNA sola categoría.
 
-Categorías válidas:
-- baches
-- residuos
-- alumbrado
-- semaforo
-- inundacion
+Categorías válidas (usa exactamente el nombre tal como aparece, en minúsculas):
+${listaCategoriasTexto}
+
+Si el incidente no tiene relación clara con ninguna categoría, elige la más cercana posible de la lista. No inventes categorías nuevas.
 
 Responde únicamente JSON válido.
 
 Ejemplo:
 {
-  "categoria": "baches",
+  "categoria": "${nombresCategorias[0]}",
   "confianza": 0.95
 }
 
@@ -51,74 +72,40 @@ Texto:
 ${texto}
 `;
 
-      const response =
-        await ai.models.generateContent({
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-          model:
-            "gemini-2.5-flash",
+    const text = response.text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-          contents:
-            prompt
+    const resultado = JSON.parse(text);
 
-        });
+    const categoriaNormalizada = String(resultado.categoria || "")
+      .trim()
+      .toLowerCase();
 
-      const text =
-        response.text
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim();
-
-      const resultado =
-        JSON.parse(text);
-
-      if (
-        !CATEGORIAS_VALIDAS.includes(
-          resultado.categoria
-        )
-      ) {
-
-        throw new Error(
-          "Categoría inválida"
-        );
-
-      }
-
-      return {
-
-        categoria:
-          resultado.categoria,
-
-        confianza:
-          Number(
-            resultado.confianza
-          ) || 0
-
-      };
-
-    } catch (error) {
-
-      console.error(
-        "Error Gemini:",
-        error.message
-      );
-
-      return {
-
-        categoria: null,
-
-        confianza: 0
-
-      };
-
+    if (!nombresCategorias.includes(categoriaNormalizada)) {
+      throw new Error(`Categoría inválida devuelta por la IA: ${resultado.categoria}`);
     }
 
-  };
-  export const normalizeIncident =
-  async (texto) => {
+    return {
+      categoria: categoriaNormalizada,
+      confianza: Number(resultado.confianza) || 0,
+    };
 
-    try {
+  } catch (error) {
+    console.error("Error Gemini:", error.message);
+    return { categoria: null, confianza: 0 };
+  }
+};
 
-      const prompt = `
+export const normalizeIncident = async (texto) => {
+  try {
+    const prompt = `
 Reescribe el siguiente reporte ciudadano.
 
 Objetivos:
@@ -132,40 +119,22 @@ Reporte:
 ${texto}
 `;
 
-      const response =
-        await ai.models.generateContent({
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-          model:
-            "gemini-2.5-flash",
+    return response.text.trim();
 
-          contents:
-            prompt
+  } catch (error) {
+    console.error("Error normalizando:", error.message);
+    return texto;
+  }
+};
 
-        });
-
-      return response.text.trim();
-
-    } catch (error) {
-
-      console.error(
-        "Error normalizando:",
-        error.message
-      );
-
-      return texto;
-
-    }
-
-  };
-  export const detectDuplicateIncident =
-  async (
-    reporteNuevo,
-    reporteExistente
-  ) => {
-
-    try {
-
-      const prompt = `
+export const detectDuplicateIncident = async (reporteNuevo, reporteExistente) => {
+  try {
+    const prompt = `
 Analiza si estos dos reportes describen el MISMO incidente físico.
 
 Ten en cuenta:
@@ -200,64 +169,32 @@ Descripción:
 ${reporteExistente.descripcion}
 `;
 
-      const response =
-        await ai.models.generateContent({
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-          model:
-            "gemini-2.5-flash",
+    const text = response.text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-          contents:
-            prompt
+    const resultado = JSON.parse(text);
 
-        });
+    return {
+      duplicado: Boolean(resultado.duplicado),
+      confianza: Number(resultado.confianza) || 0,
+    };
 
-      const text =
-        response.text
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim();
+  } catch (error) {
+    console.error("Error detectando duplicado:", error.message);
+    return { duplicado: false, confianza: 0 };
+  }
+};
 
-      const resultado =
-        JSON.parse(text);
-
-      return {
-
-        duplicado:
-          Boolean(
-            resultado.duplicado
-          ),
-
-        confianza:
-          Number(
-            resultado.confianza
-          ) || 0
-
-      };
-
-    } catch (error) {
-
-      console.error(
-        "Error detectando duplicado:",
-        error.message
-      );
-
-      return {
-
-        duplicado: false,
-
-        confianza: 0
-
-      };
-
-    }
-
-  };
-  export const prioritizeIncident =
-  async (reporte) => {
-
-    try {
-
-      const prompt = `
+export const prioritizeIncident = async (reporte) => {
+  try {
+    const prompt = `
 Analiza este incidente urbano y asigna una prioridad.
 
 Prioridades válidas:
@@ -303,74 +240,39 @@ Categoría:
 ${reporte.categoria}
 `;
 
-      const response =
-        await ai.models.generateContent({
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-          model:
-            "gemini-2.5-flash",
+    const text = response.text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-          contents:
-            prompt
+    const resultado = JSON.parse(text);
 
-        });
+    return {
+      prioridad: resultado.prioridad,
+      confianza: Number(resultado.confianza) || 0,
+    };
 
-      const text =
-        response.text
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim();
+  } catch (error) {
+    console.error("Error priorizando:", error.message);
+    return { prioridad: "medium", confianza: 0 };
+  }
+};
 
-      const resultado =
-        JSON.parse(text);
-
-      return {
-
-        prioridad:
-          resultado.prioridad,
-
-        confianza:
-          Number(
-            resultado.confianza
-          ) || 0
-
-      };
-
-    } catch (error) {
-
-      console.error(
-        "Error priorizando:",
-        error.message
-      );
-
-      return {
-
-        prioridad:
-          "medium",
-
-        confianza: 0
-
-      };
-
-    }
-
-  };
- export const generateCityInsights =
-  async (estadisticas) => {
-
-    try {
-
-      const prompt = `
+export const generateCityInsights = async (estadisticas) => {
+  try {
+    const prompt = `
 Eres un analista urbano.
 
 Genera un resumen ejecutivo para administradores municipales.
 
 Datos:
 
-${JSON.stringify(
-  estadisticas,
-  null,
-  2
-)}
+${JSON.stringify(estadisticas, null, 2)}
 
 Genera:
 
@@ -382,33 +284,20 @@ Genera:
 Máximo 250 palabras.
 `;
 
-      const response =
-        await ai.models.generateContent({
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-          model:
-            "gemini-2.5-flash",
+    return response.text.trim();
 
-          contents:
-            prompt
+  } catch (error) {
+    console.error("Error generando insights:", error.message);
+    return "No fue posible generar el resumen.";
+  }
+};
 
-        });
-
-      return response.text.trim();
-
-    } catch (error) {
-
-      console.error(
-        "Error generando insights:",
-        error.message
-      );
-
-      return "No fue posible generar el resumen.";
-
-    }
-
-  };
-  
-  export const validateReportContent = async (titulo, descripcion) => {
+export const validateReportContent = async (titulo, descripcion) => {
   try {
     const prompt = `
 Analiza el siguiente reporte ciudadano y determina si es válido.

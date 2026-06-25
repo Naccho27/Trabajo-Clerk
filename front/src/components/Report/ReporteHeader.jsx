@@ -13,11 +13,11 @@ export default function ReporteHeader({ reporte }) {
   const prior = PRIORIDAD_CONFIG[reporte.prioridad];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 flex items-center gap-3">
       <img src={icons[reporte.categoria]} className="w-10 h-10" alt={reporte.categoria} />
       <div className="flex-1">
-        <p className="font-semibold text-gray-800">{reporte.titulo}</p>
-        <p className="text-xs text-gray-400 capitalize">{reporte.categoria}</p>
+        <p className="font-semibold text-gray-800 dark:text-gray-100">{reporte.titulo}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{reporte.categoria}</p>
         {prior && (
           <span
             className="text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block"
@@ -35,14 +35,14 @@ export default function ReporteHeader({ reporte }) {
           onClick={() => setMostrarPerfil(!mostrarPerfil)}
         />
         {mostrarPerfil && (
-          <div className="absolute top-12 right-0 z-10 bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2 w-48">
+          <div className="absolute top-12 right-0 z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2 w-48 border border-gray-100 dark:border-gray-700">
             <img
               src={reporte.usuarioId?.imagenPerfil || "https://via.placeholder.com/60"}
               className="w-16 h-16 rounded-full object-cover"
               alt="perfil"
             />
-            <p className="font-semibold text-sm text-gray-800">{reporte.usuarioId?.nombreUsuario || "Usuario"}</p>
-            <p className="text-xs text-gray-400">{reporte.usuarioId?.email || ""}</p>
+            <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{reporte.usuarioId?.nombreUsuario || "Usuario"}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{reporte.usuarioId?.email || ""}</p>
           </div>
         )}
       </div>

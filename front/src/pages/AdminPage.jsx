@@ -489,6 +489,8 @@ export default function AdminPage() {
   const [loadingCategorias, setLoadingCategorias] = useState(false);
   const [mostrarModalCrearCat, setMostrarModalCrearCat] = useState(false);
   const [categoriaEditando, setCategoriaEditando] = useState(null);
+  const [busquedaCategoria, setBusquedaCategoria] = useState("");
+  const [filtroEstadoCategoria, setFiltroEstadoCategoria] = useState("");
 
   useEffect(() => { cargarTodo(); }, []);
 
@@ -619,6 +621,13 @@ export default function AdminPage() {
     const activoMatch = filtrosUsuarios.activo === "" ||
       (filtrosUsuarios.activo === "activo" ? u.activo === true : u.activo === false);
     return textMatch && rolMatch && activoMatch;
+  });
+
+  const categoriasFiltradas = categorias.filter((c) => {
+    const nombreMatch = c.nombre?.toLowerCase().includes(busquedaCategoria.toLowerCase());
+    const estadoMatch = filtroEstadoCategoria === "" ||
+      (filtroEstadoCategoria === "activa" ? c.activa === true : c.activa === false);
+    return nombreMatch && estadoMatch;
   });
 
   if (perfilUsuario) {
@@ -1010,6 +1019,24 @@ export default function AdminPage() {
                   + Nueva categoría
                 </button>
               </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <BuscadorInput value={busquedaCategoria} onChange={setBusquedaCategoria} placeholder="Buscar categoría..." />
+                </div>
+                <select value={filtroEstadoCategoria}
+                  onChange={(e) => setFiltroEstadoCategoria(e.target.value)}
+                  className={selectClass}>
+                  <option value="">Todos los estados</option>
+                  <option value="activa">Activa</option>
+                  <option value="inactiva">Inactiva</option>
+                </select>
+                {(busquedaCategoria || filtroEstadoCategoria) && (
+                  <button onClick={() => { setBusquedaCategoria(""); setFiltroEstadoCategoria(""); }}
+                    className="text-xs text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 px-2">
+                    Limpiar filtros ✕
+                  </button>
+                )}
+              </div>
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
@@ -1023,9 +1050,9 @@ export default function AdminPage() {
                   <tbody>
                     {loadingCategorias ? (
                       <tr><td colSpan={4} className="text-center py-8 text-gray-400 dark:text-gray-500">Cargando...</td></tr>
-                    ) : categorias.length === 0 ? (
+                    ) : categoriasFiltradas.length === 0 ? (
                       <tr><td colSpan={4} className="text-center py-8 text-gray-400 dark:text-gray-500">No hay categorías</td></tr>
-                    ) : categorias.map((cat, i) => (
+                    ) : categoriasFiltradas.map((cat, i) => (
                       <tr key={cat._id} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50"}
                         style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
                         <td className="px-4 py-3">

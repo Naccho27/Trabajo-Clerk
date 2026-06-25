@@ -9,6 +9,7 @@ import ReportDetailModal from "../Report/ReportDetailModal.jsx";
 import { icons } from "../../assets/icons/icons.js";
 import { useCategorias } from "../../context/CategoriasContext.jsx";
 import HeatmapLayer from "./HeatmapLayer";
+import { useTheme } from "../../context/ThemeContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -27,6 +28,7 @@ function ClickHandler({ modoCrear, onMapClick }) {
 
 export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, modoMapa = "normal" }) {
   const { categorias } = useCategorias();
+  const { modoOscuro } = useTheme();
   const [reportes, setReportes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState(null);
@@ -106,7 +108,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
               <h3 className="font-bold text-sm leading-tight">{reporte.titulo}</h3>
               {reporte.cantidadConfirmaciones > 1 && (
                 <span className="text-xs font-medium text-orange-500">
-                   {reporte.cantidadConfirmaciones} personas reportaron esto
+                  {reporte.cantidadConfirmaciones} personas reportaron esto
                 </span>
               )}
               <span className="text-xs text-gray-400">
@@ -160,6 +162,7 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
       )}
 
       <MapContainer
+        key={modoOscuro ? "dark" : "light"}
         center={VILLA_MARIA}
         zoom={14}
         minZoom={13}
@@ -170,7 +173,11 @@ export default function MapView({ filtro = "todos", modoCrear, onCancelarCrear, 
         style={{ cursor: modoCrear ? "crosshair" : "grab" }}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url={
+            modoOscuro
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          }
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
         <ClickHandler modoCrear={modoCrear} onMapClick={handleMapClick} />

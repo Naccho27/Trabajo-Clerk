@@ -9,8 +9,8 @@ import EditReportModal from "../Report/EditReportModal.jsx";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ESTADO_BADGE = {
-  open:        { bg: "bg-gray-100",   text: "text-gray-600",   label: "Pendiente" },
-  in_progress: { bg: "bg-yellow-100", text: "text-yellow-800", label: "En progreso" },
+  open:        { bg: "bg-gray-100 dark:bg-gray-700",   text: "text-gray-600 dark:text-gray-300",   label: "Pendiente" },
+  in_progress: { bg: "bg-yellow-100 dark:bg-yellow-900", text: "text-yellow-800 dark:text-yellow-200", label: "En progreso" },
 };
 
 export default function MisReportesModal({ onClose }) {
@@ -69,47 +69,47 @@ export default function MisReportesModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-[1001] bg-black/40" onClick={handleClose}>
       <div
-        className={`absolute bottom-0 left-1/2 -translate-x-1/2 bg-white rounded-t-3xl p-6 pb-20 max-h-[85vh] overflow-y-auto w-full max-w-2xl ${closing ? "slide-down" : "slide-up"}`}
+        className={`absolute bottom-0 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-900 rounded-t-3xl p-6 pb-20 max-h-[85vh] overflow-y-auto w-full max-w-2xl ${closing ? "slide-down" : "slide-up"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-xs text-blue-500 font-semibold">Activos</p>
-            <p className="text-lg font-bold">Mis Reportes</p>
+            <p className="text-lg font-bold dark:text-white">Mis Reportes</p>
           </div>
           <button
             onClick={handleClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50"
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             ✕
           </button>
         </div>
 
-        <hr className="mb-4" />
+        <hr className="mb-4 dark:border-gray-700" />
 
         {loading ? (
-          <p className="text-sm text-gray-400 text-center">Cargando...</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center">Cargando...</p>
         ) : reportes.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center">No tenés reportes activos</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center">No tenés reportes activos</p>
         ) : (
           <div className="flex flex-col gap-1">
             {reportes.map((reporte) => {
               const badge = ESTADO_BADGE[reporte.estado];
               const esPendiente = reporte.estado === "open";
               return (
-                <div key={reporte._id} className="flex flex-col py-2 border-b border-gray-50">
+                <div key={reporte._id} className="flex flex-col py-2 border-b border-gray-50 dark:border-gray-800">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <img src={getIcono(reporte.categoria)} className="w-8 h-8" alt={reporte.categoria} />
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{reporte.titulo}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{reporte.titulo}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {badge && (
                             <span className={`${badge.bg} ${badge.text} text-xs px-2 py-0.5 rounded-full`}>
                               {badge.label}
                             </span>
                           )}
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
                             {new Date(reporte.createdAt).toLocaleDateString("es-AR")}
                           </span>
                         </div>
@@ -117,7 +117,7 @@ export default function MisReportesModal({ onClose }) {
                     </div>
                     <button
                       onClick={() => setSelectedReporteId(reporte._id)}
-                      className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 text-xs"
+                      className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs"
                     >
                       →
                     </button>
@@ -127,13 +127,13 @@ export default function MisReportesModal({ onClose }) {
                     <div className="flex gap-2 mt-2 ml-11">
                       <button
                         onClick={() => setEditReporte(reporte)}
-                        className="text-xs border border-blue-200 text-blue-500 rounded-full px-3 py-1 hover:bg-blue-50"
+                        className="text-xs border border-blue-200 dark:border-blue-800 text-blue-500 dark:text-blue-400 rounded-full px-3 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => setConfirmEliminar(reporte._id)}
-                        className="text-xs border border-red-200 text-red-400 rounded-full px-3 py-1 hover:bg-red-50"
+                        className="text-xs border border-red-200 dark:border-red-800 text-red-400 dark:text-red-400 rounded-full px-3 py-1 hover:bg-red-50 dark:hover:bg-red-900/30"
                       >
                         Eliminar
                       </button>
@@ -147,13 +147,13 @@ export default function MisReportesModal({ onClose }) {
 
         {confirmEliminar && (
           <div className="fixed inset-0 z-[1004] bg-black/40 flex items-center justify-center px-4">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-              <p className="text-base font-semibold text-gray-800 mb-2">¿Eliminar reporte?</p>
-              <p className="text-sm text-gray-500 mb-6">Esta acción no se puede deshacer.</p>
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <p className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Eliminar reporte?</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmEliminar(null)}
-                  className="flex-1 py-2 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50"
+                  className="flex-1 py-2 rounded-full border border-gray-200 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Cancelar
                 </button>

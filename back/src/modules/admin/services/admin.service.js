@@ -1,6 +1,7 @@
 import Usuario from "../../ciudadano/models/Usuario.js";
 import Categoria from "../models/admin.categories.js";
 import { createClerkClient } from "@clerk/backend";
+import { invalidateCategoriasCache } from "../../../shared/services/ai.service.js"; // ⚠️ ajustá esta ruta si tu estructura es distinta
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY
@@ -127,40 +128,82 @@ export const getActiveCategoriesService = async () => {
   return await Categoria.find({ activa: true }).sort({ nombre: 1 });
 };
 
+/*
+|--------------------------------------------------------------
+| Crear categoría
+|--------------------------------------------------------------
+*/
+
 export const createCategoryService = async (nombre, imagenUrl) => {
   const nombreLimpio = nombre.trim().toLowerCase();
   const existe = await Categoria.findOne({ nombre: nombreLimpio });
   if (existe) throw new Error("La categoría ya existe");
-  return await Categoria.create({
+
+  const categoria = await Categoria.create({
     nombre: nombreLimpio,
     ...(imagenUrl && { imagen: imagenUrl }),
   });
+
+  invalidateCategoriasCache(); // refresca el cache que usa la IA para clasificar
+
+  return categoria;
 };
+
+/*
+|--------------------------------------------------------------
+| Actualizar categoría
+|--------------------------------------------------------------
+*/
 
 export const updateCategoryService = async (categoryId, nombre, imagenUrl) => {
   const categoria = await Categoria.findById(categoryId);
   if (!categoria) throw new Error("Categoría no encontrada");
+
   const nombreLimpio = nombre.trim().toLowerCase();
   const existe = await Categoria.findOne({ nombre: nombreLimpio, _id: { $ne: categoryId } });
   if (existe) throw new Error("Ya existe una categoría con ese nombre");
+
   categoria.nombre = nombreLimpio;
   if (imagenUrl) categoria.imagen = imagenUrl;
   await categoria.save();
+
+  invalidateCategoriasCache();
+
   return categoria;
 };
+
+/*
+|--------------------------------------------------------------
+| Desactivar categoría
+|--------------------------------------------------------------
+*/
 
 export const disableCategoryService = async (categoryId) => {
   const categoria = await Categoria.findById(categoryId);
   if (!categoria) throw new Error("Categoría no encontrada");
+
   categoria.activa = false;
   await categoria.save();
+
+  invalidateCategoriasCache();
+
   return categoria;
 };
+
+/*
+|--------------------------------------------------------------
+| Activar categoría
+|--------------------------------------------------------------
+*/
 
 export const enableCategoryService = async (categoryId) => {
   const categoria = await Categoria.findById(categoryId);
   if (!categoria) throw new Error("Categoría no encontrada");
+
   categoria.activa = true;
   await categoria.save();
+
+  invalidateCategoriasCache();
+
   return categoria;
 };

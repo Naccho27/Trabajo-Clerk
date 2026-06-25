@@ -14,7 +14,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
   const categorias = categoriasBD.map(cat => ({
     id: cat.nombre,
     label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
-     icon: cat.imagen || icons[cat.nombre] || icons.todos,
+    icon: cat.imagen || icons[cat.nombre] || icons.todos,
   }));
 
   const [titulo, setTitulo] = useState("");
@@ -94,8 +94,6 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("RESPUESTA BACK:", data);
-
       if (data.duplicado) {
         setDuplicadoDetectado(true);
         setError(
@@ -128,10 +126,10 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-[1001] bg-black/40" onClick={onClose}>
       <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-white rounded-t-3xl p-6 pb-10 w-full max-w-2xl slide-up"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-900 rounded-t-3xl p-6 pb-10 w-full max-w-2xl slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold mb-4">Nuevo Reporte</h2>
+        <h2 className="text-lg font-bold dark:text-white mb-4">Nuevo Reporte</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
@@ -139,7 +137,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             placeholder="Título del reporte"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
-            className="border border-gray-300 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
+            className="border border-gray-300 dark:border-gray-600 bg-transparent dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
           />
 
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -149,11 +147,13 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
                 type="button"
                 onClick={() => setCategoria(cat.id)}
                 className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${
-                  categoria === cat.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                  categoria === cat.id
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                    : "border-gray-200 dark:border-gray-700"
                 }`}
               >
                 <img src={cat.icon} className="w-7 h-7" />
-                <span className="text-xs text-gray-600">{cat.label}</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">{cat.label}</span>
               </button>
             ))}
           </div>
@@ -163,7 +163,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={3}
-            className="border border-gray-300 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
+            className="border border-gray-300 dark:border-gray-600 bg-transparent dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
           />
 
           <div className="flex flex-col gap-2">
@@ -173,7 +173,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
                   <div key={i} className="relative">
                     <img
                       src={URL.createObjectURL(img)}
-                      className="w-full h-20 object-cover rounded-xl border border-gray-100"
+                      className="w-full h-20 object-cover rounded-xl border border-gray-100 dark:border-gray-700"
                     />
                     <button
                       type="button"
@@ -187,7 +187,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
               </div>
             )}
             {imagenes.length < MAX_IMAGENES && (
-              <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 text-center">
+              <label className="cursor-pointer border border-gray-300 dark:border-gray-600 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-center">
                 {imagenes.length === 0
                   ? "Agregar fotos o videos (opcional)"
                   : `Agregar más (${imagenes.length}/${MAX_IMAGENES})`}
@@ -202,7 +202,7 @@ export default function ReportModal({ ubicacion, onClose, onSuccess }) {
             )}
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             📍 {direccion}{barrio ? `, ${barrio}` : ""}, {ciudad}
           </p>
 

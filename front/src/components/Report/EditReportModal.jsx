@@ -99,14 +99,14 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl p-6 pb-8 w-full max-w-md max-h-[85vh] overflow-y-auto slide-up"
+        className="bg-white dark:bg-gray-900 rounded-3xl p-6 pb-8 w-full max-w-md max-h-[85vh] overflow-y-auto slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">Editar Reporte</h2>
+          <h2 className="text-lg font-bold dark:text-white">Editar Reporte</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50"
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             ✕
           </button>
@@ -119,7 +119,7 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             placeholder="Título del reporte"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
-            className="border border-gray-300 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
+            className="border border-gray-300 dark:border-gray-600 bg-transparent dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
           />
 
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -129,11 +129,13 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
                 type="button"
                 onClick={() => setCategoria(cat.id)}
                 className={`flex flex-col items-center gap-1 min-w-[55px] p-2 rounded-xl border transition-all ${
-                  categoria === cat.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                  categoria === cat.id
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                    : "border-gray-200 dark:border-gray-700"
                 }`}
               >
                 <img src={cat.icon} className="w-7 h-7" />
-                <span className="text-xs text-gray-600">{cat.label}</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">{cat.label}</span>
               </button>
             ))}
           </div>
@@ -143,16 +145,16 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={3}
-            className="border border-gray-300 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
+            className="border border-gray-300 dark:border-gray-600 bg-transparent dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl px-4 py-2 text-sm outline-none focus:border-blue-500 resize-none"
           />
 
           {imagenesExistentes.length > 0 && (
             <div className="flex flex-col gap-1">
-              <p className="text-xs text-gray-400">Fotos actuales</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Fotos actuales</p>
               <div className="grid grid-cols-3 gap-2">
                 {imagenesExistentes.map((url, i) => (
                   <div key={i} className="relative">
-                    <img src={url} className="w-full h-20 object-cover rounded-xl border border-gray-100" />
+                    <img src={url} className="w-full h-20 object-cover rounded-xl border border-gray-100 dark:border-gray-700" />
                     <button
                       type="button"
                       onClick={() => handleEliminarExistente(i)}
@@ -168,11 +170,11 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
 
           {imagenesNuevas.length > 0 && (
             <div className="flex flex-col gap-1">
-              <p className="text-xs text-gray-400">Fotos nuevas</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Fotos nuevas</p>
               <div className="grid grid-cols-3 gap-2">
                 {imagenesNuevas.map((img, i) => (
                   <div key={i} className="relative">
-                    <img src={URL.createObjectURL(img)} className="w-full h-20 object-cover rounded-xl border border-gray-100" />
+                    <img src={URL.createObjectURL(img)} className="w-full h-20 object-cover rounded-xl border border-gray-100 dark:border-gray-700" />
                     <button
                       type="button"
                       onClick={() => handleEliminarNueva(i)}
@@ -187,7 +189,7 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
           )}
 
           {totalImagenes < MAX_IMAGENES && (
-            <label className="cursor-pointer border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 text-center">
+            <label className="cursor-pointer border border-gray-300 dark:border-gray-600 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-center">
               {totalImagenes === 0
                 ? "Agregar fotos (opcional)"
                 : `Agregar más (${totalImagenes}/${MAX_IMAGENES})`}
@@ -201,7 +203,7 @@ export default function EditReportModal({ reporte, onClose, onSuccess }) {
             </label>
           )}
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             📍 {reporte.ubicacion?.direccion}, {reporte.ubicacion?.ciudad}
           </p>
 
