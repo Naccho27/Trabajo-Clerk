@@ -17,8 +17,8 @@ export default function Navbar({ onCrearReporte, modoMapa, onToggleMapa }) {
       {showHistorial && <HistorialModal onClose={() => setShowHistorial(false)} />}
 
       <div className="absolute bottom-0 left-0 right-0 z-[1000] flex justify-center">
-        <div className="bg-white shadow-lg rounded-t-3xl flex items-center justify-around px-4 py-3 w-full max-w-4xl">
-
+        <div className="bg-white shadow-lg rounded-t-3xl flex items-center justify-around px-8 py-4 w-full">
+          
           <button
             onClick={onToggleMapa}
             className="flex flex-col items-center gap-1"
@@ -48,7 +48,7 @@ export default function Navbar({ onCrearReporte, modoMapa, onToggleMapa }) {
 
           <button onClick={() => setShowMisReportes(true)} className="flex flex-col items-center gap-1">
             <span className="text-xl">📋</span>
-            <span className="text-xs text-gray-500">Mis Reportes</span>
+            <span className="text-xs text-gray-500">Reportes</span>
           </button>
 
           <button onClick={() => setShowProfile(true)} className="flex flex-col items-center gap-1">

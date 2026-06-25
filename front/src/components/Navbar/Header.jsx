@@ -12,10 +12,10 @@ const LABEL_POR_ROL = {
 };
 
 const ROL_COLORES = {
-  ciudadano:  "bg-gray-100 text-gray-600",
+  ciudadano: "bg-gray-100 text-gray-600",
   supervisor: "bg-purple-100 text-purple-600",
-  operador:   "bg-green-100 text-green-600",
-  admin:      "bg-red-100 text-red-600",
+  operador: "bg-green-100 text-green-600",
+  admin: "bg-red-100 text-red-600",
 };
 
 // Orden fijo en el que se muestran los botones, sin importar el orden del array roles
@@ -71,7 +71,7 @@ export default function Header() {
 
           {menuOpen && (
             <div
-              className="absolute top-12 right-0 z-[1002] bg-white shadow-xl rounded-2xl w-64 py-4 px-4 flex flex-col gap-3"
+              className="absolute top-12 right-0 z-[2000] bg-white shadow-xl rounded-2xl w-64 py-4 px-4 flex flex-col gap-3"
               style={{ animation: "fadeInUp 0.2s ease-out" }}
             >
               {/* Datos de la cuenta */}
@@ -111,11 +111,10 @@ export default function Header() {
                     <button
                       key={item.path}
                       onClick={() => { navigate(item.path); setMenuOpen(false); }}
-                      className={`text-left w-full text-sm px-3 py-2 rounded-xl transition-all ${
-                        location.pathname === item.path
-                          ? "text-white font-semibold"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={`text-left w-full text-sm px-3 py-2 rounded-xl transition-all ${location.pathname === item.path
+                        ? "text-white font-semibold"
+                        : "text-gray-600 hover:bg-gray-50"
+                        }`}
                       style={location.pathname === item.path
                         ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
                         : {}}

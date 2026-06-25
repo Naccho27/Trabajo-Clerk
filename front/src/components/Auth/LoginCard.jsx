@@ -194,7 +194,7 @@ export default function LoginCard() {
         {step === "email" && (
           <form onSubmit={handleContinueEmail} className="flex flex-col gap-4">
             <p className="text-center text-gray-500 text-sm">
-              Por favor loguearse para continuar
+              Por favor ingrese sus datos para continuar
             </p>
             <button type="button" onClick={handleGoogle}
               className="flex items-center justify-center gap-3 border border-gray-700 rounded-full py-2 px-4 text-gray-800 font-medium hover:bg-gray-100 transition-colors">

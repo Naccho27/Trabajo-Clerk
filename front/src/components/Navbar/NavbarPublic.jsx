@@ -69,7 +69,7 @@ export default function NavbarPublic() {
             className="flex flex-col items-center gap-1"
           >
             <span className="text-xl">📋</span>
-            <span className="text-xs text-gray-500">Mis Reportes</span>
+            <span className="text-xs text-gray-500">Reportes</span>
           </button>
 
           <button
