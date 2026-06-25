@@ -2,7 +2,7 @@ export default function DashboardSaludo({ user, rol = "Usuario" }) {
   return (
     <div className="flex items-center justify-center py-10 md:py-20">
       <h1
-        className="text-4xl md:text-7xl font-bold text-center"
+        className="text-4xl md:text-7xl font-bold text-center text-gray-900 dark:text-white"
         style={{ animation: "fadeInDown 0.6s ease-out" }}
       >
         ¡Hola,{" "}

@@ -139,18 +139,18 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
   return (
     <>
       <tr
-        className={`cursor-pointer hover:bg-gray-50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"} ${expandido ? "bg-blue-50/30" : ""}`}
+        className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"} ${expandido ? "bg-blue-50/30 dark:bg-blue-900/20" : ""}`}
         style={{ animation: `fadeInUp 0.3s ease-out ${index * 40}ms both` }}
         onClick={handleExpandir}
       >
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <img src={icons[reporte.categoria]} className="w-7 h-7 shrink-0" alt={reporte.categoria} />
-            <span className="font-medium text-gray-800">{reporte.titulo}</span>
+            <span className="font-medium text-gray-800 dark:text-gray-100">{reporte.titulo}</span>
           </div>
         </td>
-        <td className="px-4 py-3 text-gray-500 text-xs">{reporte.ubicacion?.direccion ?? "Sin dirección"}</td>
-        <td className="px-4 py-3 capitalize text-gray-500">{reporte.categoria}</td>
+        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{reporte.ubicacion?.direccion ?? "Sin dirección"}</td>
+        <td className="px-4 py-3 capitalize text-gray-500 dark:text-gray-400">{reporte.categoria}</td>
         <td className="px-4 py-3">
           {prioridad && (
             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -167,43 +167,43 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
             </span>
           )}
         </td>
-        <td className="px-4 py-3 text-gray-400 text-xs">{formatearFecha(reporte.updatedAt)}</td>
+        <td className="px-4 py-3 text-gray-400 dark:text-gray-500 text-xs">{formatearFecha(reporte.updatedAt)}</td>
         <td className="px-4 py-3">
-          <span className={`text-gray-400 transition-transform inline-block ${expandido ? "rotate-90" : ""}`}>→</span>
+          <span className={`text-gray-400 dark:text-gray-500 transition-transform inline-block ${expandido ? "rotate-90" : ""}`}>→</span>
         </td>
       </tr>
 
       {expandido && (
-        <tr className="bg-blue-50/20">
+        <tr className="bg-blue-50/20 dark:bg-blue-900/10">
           <td colSpan={7} className="px-6 py-4">
             <div className="flex flex-col gap-4" style={{ animation: "fadeInUp 0.3s ease-out" }}>
               <div>
-                <p className="text-xs text-gray-400 font-medium mb-1">Descripción</p>
-                <p className="text-sm text-gray-700">{reporte.descripcion}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium mb-1">Descripción</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{reporte.descripcion}</p>
               </div>
 
               {reporte.imagenes?.length > 0 && (
                 <div className="flex gap-2 flex-wrap">
                   {reporte.imagenes.map((img, i) => (
                     <img key={i} src={img} alt={`img-${i}`}
-                      className="h-24 w-36 object-cover rounded-xl border border-gray-100" />
+                      className="h-24 w-36 object-cover rounded-xl border border-gray-100 dark:border-gray-700" />
                   ))}
                 </div>
               )}
 
               {comentarios.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-xs text-gray-400 font-medium">Comentarios</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Comentarios</p>
                   {comentarios.map((c, i) => (
-                    <div key={i} className="bg-white rounded-xl px-4 py-2.5 flex items-start gap-3 shadow-sm">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600 shrink-0">
+                    <div key={i} className="bg-white dark:bg-gray-800 rounded-xl px-4 py-2.5 flex items-start gap-3 shadow-sm">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shrink-0">
                         {c.usuarioId?.nombreUsuario?.[0]?.toUpperCase() ?? "?"}
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-700">{c.usuarioId?.nombreUsuario ?? "Operador"}</p>
-                        <p className="text-sm text-gray-600">{c.mensaje}</p>
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{c.usuarioId?.nombreUsuario ?? "Operador"}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{c.mensaje}</p>
                       </div>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
                         {new Date(c.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
                       </span>
                     </div>
@@ -218,7 +218,7 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     placeholder="Escribí un comentario público..."
-                    className="flex-1 border border-gray-200 rounded-full px-4 py-1.5 text-sm outline-none focus:border-blue-400"
+                    className="flex-1 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-full px-4 py-1.5 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 dark:placeholder:text-gray-500"
                     onKeyDown={(e) => e.key === "Enter" && handleComentar()}
                   />
                   <button
@@ -238,7 +238,7 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
                     <button
                       onClick={() => handleCambiarEstado("in_progress")}
                       disabled={loadingAcc}
-                      className="px-4 py-1.5 rounded-full text-xs font-semibold border border-yellow-300 text-yellow-700 hover:bg-yellow-50 disabled:opacity-60"
+                      className="px-4 py-1.5 rounded-full text-xs font-semibold border border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 disabled:opacity-60"
                     >
                       Poner en progreso
                     </button>
@@ -256,7 +256,7 @@ function FilaOperador({ reporte, index, onActualizar, getToken }) {
                   <button
                     onClick={() => handleCambiarEstado("rejected")}
                     disabled={loadingAcc}
-                    className="px-4 py-1.5 rounded-full text-xs font-semibold border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-60"
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-60"
                   >
                     Rechazar
                   </button>
@@ -355,19 +355,19 @@ export default function OperadorPage() {
           <FiltrosTabla filtros={filtros} onChange={setFiltros} mostrarEstado={true} />
           {reportesFiltrados.length === 0 ? (
             <div className="flex items-center justify-center h-40">
-              <p className="text-sm text-gray-400">No hay incidentes en esta sección</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">No hay incidentes en esta sección</p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm overflow-visible">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-visible">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                   <tr>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Reporte</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Ubicación</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Categoría</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Prioridad</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Fecha</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Reporte</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Ubicación</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Categoría</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Prioridad</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Estado</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Fecha</th>
                     <th />
                   </tr>
                 </thead>

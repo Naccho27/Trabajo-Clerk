@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import SignOutButton from "../Buttons/SignOutButton";
 import { useUsuarioBD } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext";
 
 const LABEL_POR_ROL = {
   ciudadano: { label: "Ciudadano", path: "/mapa" },
@@ -12,18 +13,18 @@ const LABEL_POR_ROL = {
 };
 
 const ROL_COLORES = {
-  ciudadano:  "bg-gray-100 text-gray-600",
-  supervisor: "bg-purple-100 text-purple-600",
-  operador:   "bg-green-100 text-green-600",
-  admin:      "bg-red-100 text-red-600",
+  ciudadano:  "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-200",
+  supervisor: "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
+  operador:   "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200",
+  admin:      "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200",
 };
 
-// Orden fijo en el que se muestran los botones, sin importar el orden del array roles
 const ORDEN_ROLES = ["admin", "supervisor", "operador", "ciudadano"];
 
 export default function Header() {
   const { isSignedIn, user } = useUser();
   const { usuarioBD } = useUsuarioBD();
+  const { modoOscuro, toggleModoOscuro } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,12 +32,10 @@ export default function Header() {
 
   const rolesUsuario = usuarioBD?.roles ?? [];
 
-  // Solo se muestran los roles que el usuario REALMENTE tiene
   const navItems = ORDEN_ROLES
     .filter((rol) => rolesUsuario.includes(rol))
     .map((rol) => LABEL_POR_ROL[rol]);
 
-  // Cerrar el menú al hacer click afuera
   useEffect(() => {
     const handleClickFuera = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -48,65 +47,63 @@ export default function Header() {
   }, []);
 
   return (
-    <div className="absolute top-0 left-0 right-0 z-[1000] bg-white px-4 py-3 flex items-center justify-between shadow-sm">
+    <div className="absolute top-0 left-0 right-0 z-[1000] bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between shadow-sm">
       <h1 className="text-2xl font-bold">
-        Urban<span className="bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">Log</span>
+        <span className="text-gray-900 dark:text-white">Urban</span>
+        <span className="bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">Log</span>
       </h1>
 
       {isSignedIn ? (
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex items-center gap-2 border border-gray-200 rounded-full pl-1.5 pr-3 py-1 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 rounded-full pl-1.5 pr-3 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <img
               src={usuarioBD?.imagenPerfil || user?.imageUrl || "https://via.placeholder.com/32"}
               alt="perfil"
               className="w-7 h-7 rounded-full object-cover"
             />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
               {usuarioBD?.nombreUsuario || "Usuario"}
             </span>
           </button>
 
           {menuOpen && (
             <div
-              className="absolute top-12 right-0 z-[1002] bg-white shadow-xl rounded-2xl w-64 py-4 px-4 flex flex-col gap-3"
+              className="absolute top-12 right-0 z-[1002] bg-white dark:bg-gray-800 shadow-xl rounded-2xl w-64 py-4 px-4 flex flex-col gap-3"
               style={{ animation: "fadeInUp 0.2s ease-out" }}
             >
-              {/* Datos de la cuenta */}
-              <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-3 pb-3 border-b border-gray-100 dark:border-gray-700">
                 <img
                   src={usuarioBD?.imagenPerfil || user?.imageUrl || "https://via.placeholder.com/48"}
                   alt="perfil"
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 <div className="flex flex-col overflow-hidden">
-                  <p className="text-sm font-semibold text-gray-800 truncate">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
                     {usuarioBD?.nombreUsuario || "Usuario"}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
                     {usuarioBD?.email}
                   </p>
                 </div>
               </div>
 
-              {/* Roles como chips */}
               <div className="flex flex-wrap gap-1.5">
                 {rolesUsuario.map((r) => (
                   <span
                     key={r}
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r] || "bg-gray-100 text-gray-600"}`}
+                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-200"}`}
                   >
                     {r}
                   </span>
                 ))}
               </div>
 
-              {/* Navegación entre paneles (solo si tiene más de 1 rol) */}
               {navItems.length > 1 && (
-                <div className="flex flex-col gap-1 pt-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-400 font-medium px-1 mb-1">Cambiar de panel</p>
+                <div className="flex flex-col gap-1 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-medium px-1 mb-1">Cambiar de panel</p>
                   {navItems.map((item) => (
                     <button
                       key={item.path}
@@ -114,7 +111,7 @@ export default function Header() {
                       className={`text-left w-full text-sm px-3 py-2 rounded-xl transition-all ${
                         location.pathname === item.path
                           ? "text-white font-semibold"
-                          : "text-gray-600 hover:bg-gray-50"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                       }`}
                       style={location.pathname === item.path
                         ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
@@ -126,9 +123,26 @@ export default function Header() {
                 </div>
               )}
 
-              {/* Cerrar sesión */}
-              <div className="pt-2 border-t border-gray-100">
-                <SignOutButton className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-center" />
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 px-1">
+                <span className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                  {modoOscuro ? "" : ""} Modo oscuro
+                </span>
+                <button
+                  onClick={toggleModoOscuro}
+                  className={`w-11 h-6 rounded-full relative transition-colors ${
+                    modoOscuro ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      modoOscuro ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                <SignOutButton className="w-full border border-gray-300 dark:border-gray-600 rounded-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-center" />
               </div>
             </div>
           )}

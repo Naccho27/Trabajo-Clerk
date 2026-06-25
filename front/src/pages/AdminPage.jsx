@@ -17,10 +17,10 @@ const API_URL = import.meta.env.VITE_API_URL;
 const ROLES = ["ciudadano", "supervisor", "operador", "admin"];
 
 const ROL_COLORES = {
-  ciudadano:  "bg-gray-100 text-gray-600",
-  supervisor: "bg-purple-100 text-purple-600",
-  operador:   "bg-green-100 text-green-600",
-  admin:      "bg-red-100 text-red-600",
+  ciudadano:  "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-200",
+  supervisor: "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
+  operador:   "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200",
+  admin:      "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200",
 };
 
 // Colores fijos para categorías conocidas
@@ -52,10 +52,10 @@ const obtenerColorCategoria = (nombreCategoria) => {
 };
 
 const ESTADO_COLORES = {
-  open:        "bg-blue-100 text-blue-600",
-  in_progress: "bg-yellow-100 text-yellow-600",
-  resolved:    "bg-green-100 text-green-600",
-  rejected:    "bg-red-100 text-red-600",
+  open:        "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200",
+  in_progress: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-200",
+  resolved:    "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200",
+  rejected:    "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200",
 };
 
 const NAV_ITEMS = [
@@ -64,18 +64,18 @@ const NAV_ITEMS = [
   { key: "categorias", label: "Categorías" },
 ];
 
-const selectClass = "border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 bg-white outline-none focus:border-blue-400 cursor-pointer";
+const selectClass = "border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 outline-none focus:border-blue-400 cursor-pointer";
 
 function Sidebar({ seccion, setSeccion }) {
   return (
-    <div className="fixed top-[56px] left-0 bottom-0 w-52 bg-white border-r border-gray-100 flex flex-col py-4 px-3 z-40">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Panel Admin</p>
+    <div className="fixed top-[56px] left-0 bottom-0 w-52 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col py-4 px-3 z-40">
+      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">Panel Admin</p>
       {NAV_ITEMS.map((item) => (
         <button
           key={item.key}
           onClick={() => setSeccion(item.key)}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left mb-1 ${
-            seccion === item.key ? "text-white" : "text-gray-600 hover:bg-gray-100"
+            seccion === item.key ? "text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           }`}
           style={seccion === item.key
             ? { background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }
@@ -90,11 +90,25 @@ function Sidebar({ seccion, setSeccion }) {
 
 function ModalCrearUsuario({ onClose, onSuccess }) {
   const { getToken } = useAuth();
-  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", rol: "ciudadano" });
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombreUsuario: "", email: "", password: "", roles: ["ciudadano"] });
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [errorCrear, setErrorCrear] = useState("");
 
+  const toggleRolNuevo = (rol) => {
+    setNuevoUsuario((prev) => {
+      const yaTiene = prev.roles.includes(rol);
+      const roles = yaTiene
+        ? prev.roles.filter((r) => r !== rol)
+        : [...prev.roles, rol];
+      return { ...prev, roles };
+    });
+  };
+
   const handleCrear = async () => {
+    if (nuevoUsuario.roles.length === 0) {
+      setErrorCrear("Seleccioná al menos un rol");
+      return;
+    }
     setCreandoUsuario(true);
     setErrorCrear("");
     try {
@@ -112,33 +126,51 @@ function ModalCrearUsuario({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
         style={{ animation: "fadeInUp 0.3s ease-out" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-800 text-lg">Nuevo usuario</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-100 text-lg">Nuevo usuario</p>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">✕</button>
         </div>
-        {errorCrear && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{errorCrear}</p>}
+        {errorCrear && <p className="text-red-500 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/30 rounded-xl p-3">{errorCrear}</p>}
         <div className="flex flex-col gap-3">
           <input type="text" placeholder="Nombre de usuario" value={nuevoUsuario.nombreUsuario}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombreUsuario: e.target.value })}
-            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+            className="border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
           <input type="email" placeholder="Email" value={nuevoUsuario.email}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })}
-            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+            className="border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
           <input type="password" placeholder="Contraseña" value={nuevoUsuario.password}
             onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })}
-            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
-          <select value={nuevoUsuario.rol}
-            onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
-            className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+            className="border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium px-1">Roles</p>
+            <div className="flex flex-wrap gap-2">
+              {ROLES.map((r) => {
+                const seleccionado = nuevoUsuario.roles.includes(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => toggleRolNuevo(r)}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${
+                      seleccionado
+                        ? ROL_COLORES[r] + " border-transparent"
+                        : "border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    {seleccionado ? "✓ " : ""}{r}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
+            className="flex-1 py-2.5 rounded-full border border-gray-200 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
           <button onClick={handleCrear} disabled={creandoUsuario}
             className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
             style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
@@ -176,23 +208,23 @@ function ModalResumenIA({ onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
         style={{ animation: "fadeInUp 0.3s ease-out" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-800 text-lg">Resumen de la ciudad</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-100 text-lg">Resumen de la ciudad</p>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
             ✕
           </button>
         </div>
 
-        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-red-500 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/30 rounded-xl p-3">{error}</p>}
 
         {!resumen && !loading && (
           <div className="flex flex-col items-center gap-4 py-8">
-            <p className="text-sm text-gray-400 text-center">
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
               Generá un resumen con IA sobre el estado actual de los reportes en la ciudad.
             </p>
             <button
@@ -207,53 +239,53 @@ function ModalResumenIA({ onClose }) {
 
         {loading && (
           <div className="flex flex-col items-center gap-3 py-8">
-            <p className="text-sm text-gray-400">Generando resumen...</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">Generando resumen...</p>
           </div>
         )}
 
         {resumen && !loading && (
           <div className="flex flex-col gap-4">
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-4">
+              <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-line">
                 {resumen.resumenIA}
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Datos utilizados</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">Datos utilizados</p>
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Total reportes</p>
-                  <p className="text-lg font-bold text-gray-800">{resumen.estadisticas?.totalReportes ?? "—"}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Total reportes</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{resumen.estadisticas?.totalReportes ?? "—"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Resueltos</p>
-                  <p className="text-lg font-bold text-green-600">{resumen.estadisticas?.reportesResueltos ?? "—"}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Resueltos</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">{resumen.estadisticas?.reportesResueltos ?? "—"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Pendientes</p>
-                  <p className="text-lg font-bold text-blue-600">{resumen.estadisticas?.reportesPendientes ?? "—"}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Pendientes</p>
+                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{resumen.estadisticas?.reportesPendientes ?? "—"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Críticos</p>
-                  <p className="text-lg font-bold text-red-600">{resumen.estadisticas?.reportesCriticos ?? "—"}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Críticos</p>
+                  <p className="text-lg font-bold text-red-600 dark:text-red-400">{resumen.estadisticas?.reportesCriticos ?? "—"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Prioridad alta</p>
-                  <p className="text-lg font-bold text-orange-500">{resumen.estadisticas?.reportesAltos ?? "—"}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Prioridad alta</p>
+                  <p className="text-lg font-bold text-orange-500 dark:text-orange-400">{resumen.estadisticas?.reportesAltos ?? "—"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Duplicados</p>
-                  <p className="text-lg font-bold text-gray-500">{resumen.estadisticas?.reportesDuplicados ?? "—"}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Duplicados</p>
+                  <p className="text-lg font-bold text-gray-500 dark:text-gray-400">{resumen.estadisticas?.reportesDuplicados ?? "—"}</p>
                 </div>
               </div>
 
               {resumen.estadisticas?.categorias && (
-                <div className="bg-gray-50 rounded-xl p-3 mt-1">
-                  <p className="text-xs text-gray-400 mb-2">Por categoría</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Por categoría</p>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(resumen.estadisticas.categorias).map(([cat, cant]) => (
-                      <span key={cat} className="text-xs bg-white border border-gray-200 rounded-full px-2.5 py-1 text-gray-600 capitalize">
+                      <span key={cat} className="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full px-2.5 py-1 text-gray-600 dark:text-gray-300 capitalize">
                         {cat}: <span className="font-semibold">{cant}</span>
                       </span>
                     ))}
@@ -264,7 +296,7 @@ function ModalResumenIA({ onClose }) {
 
             <button
               onClick={handleGenerar}
-              className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 underline self-center"
             >
               Volver a generar
             </button>
@@ -314,24 +346,24 @@ function ModalCrearCategoria({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
         style={{ animation: "fadeInUp 0.3s ease-out" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-800 text-lg">Nueva categoría</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-100 text-lg">Nueva categoría</p>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">✕</button>
         </div>
-        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-red-500 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/30 rounded-xl p-3">{error}</p>}
 
         <input type="text" placeholder="Nombre de la categoría" value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+          className="border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
 
         <div className="flex items-center gap-3">
           {preview && (
-            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200" />
+            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200 dark:border-gray-600" />
           )}
-          <label className="flex-1 cursor-pointer border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 text-center">
+          <label className="flex-1 cursor-pointer border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-center">
             {imagen ? imagen.name : "Subir imagen (opcional)"}
             <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
           </label>
@@ -339,7 +371,7 @@ function ModalCrearCategoria({ onClose, onSuccess }) {
 
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
+            className="flex-1 py-2.5 rounded-full border border-gray-200 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
           <button onClick={handleCrear} disabled={loading}
             className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
             style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
@@ -390,24 +422,24 @@ function ModalEditarCategoria({ categoria, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4"
         style={{ animation: "fadeInUp 0.3s ease-out" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-800 text-lg">Editar categoría</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-100 text-lg">Editar categoría</p>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">✕</button>
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">✕</button>
         </div>
-        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-red-500 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/30 rounded-xl p-3">{error}</p>}
 
         <input type="text" placeholder="Nombre de la categoría" value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          className="border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400" />
+          className="border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
 
         <div className="flex items-center gap-3">
           {preview && (
-            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200" />
+            <img src={preview} alt="preview" className="w-14 h-14 rounded-xl object-cover border border-gray-200 dark:border-gray-600" />
           )}
-          <label className="flex-1 cursor-pointer border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 text-center">
+          <label className="flex-1 cursor-pointer border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2.5 text-sm text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-center">
             {imagen ? imagen.name : "Cambiar imagen"}
             <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
           </label>
@@ -415,7 +447,7 @@ function ModalEditarCategoria({ categoria, onClose, onSuccess }) {
 
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
+            className="flex-1 py-2.5 rounded-full border border-gray-200 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
           <button onClick={handleEditar} disabled={loading}
             className="flex-1 py-2.5 rounded-full text-white text-sm font-semibold disabled:opacity-60"
             style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}>
@@ -545,12 +577,18 @@ export default function AdminPage() {
     } catch (error) { console.log("Error desbloqueando:", error); }
   };
 
-  const handleCambiarRol = async (id, nuevoRol) => {
+  const handleToggleRol = async (usuario, rol) => {
     try {
       const token = await getToken({ template: "backend" });
-      await axios.patch(`${API_URL}/admin/users/${id}/role`, { rol: nuevoRol },
-        { headers: { Authorization: `Bearer ${token}` } });
-      setCambiandoRol(null);
+      const yaTiene = usuario.roles?.includes(rol);
+
+      if (yaTiene) {
+        if (usuario.roles.length <= 1) return;
+        await quitarRol(usuario._id, rol, token);
+      } else {
+        await agregarRol(usuario._id, rol, token);
+      }
+
       cargarUsuarios();
     } catch (error) { console.log("Error cambiando rol:", error); }
   };
@@ -574,7 +612,7 @@ export default function AdminPage() {
   const usuariosFiltrados = usuarios.filter((u) => {
     const textMatch = u.nombreUsuario?.toLowerCase().includes(busqueda.toLowerCase()) ||
       u.email?.toLowerCase().includes(busqueda.toLowerCase());
-    const rolMatch = !filtrosUsuarios.rol || u.rol === filtrosUsuarios.rol;
+    const rolMatch = !filtrosUsuarios.rol || u.roles?.includes(filtrosUsuarios.rol);
     const activoMatch = filtrosUsuarios.activo === "" ||
       (filtrosUsuarios.activo === "activo" ? u.activo === true : u.activo === false);
     return textMatch && rolMatch && activoMatch;
@@ -582,54 +620,56 @@ export default function AdminPage() {
 
   if (perfilUsuario) {
     return (
-      <div className="w-screen h-screen flex flex-col bg-gray-50">
+      <div className="w-screen h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <Header />
         <div className="flex flex-1 overflow-hidden pt-[56px]">
           <Sidebar seccion={seccion} setSeccion={(s) => { setSeccion(s); setPerfilUsuario(null); }} />
           <div className="flex-1 ml-52 overflow-y-auto px-8 py-6 flex flex-col gap-4"
             style={{ animation: "fadeInUp 0.4s ease-out" }}>
             <button onClick={() => setPerfilUsuario(null)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-fit">← Volver</button>
-            <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-6">
+              className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 w-fit">← Volver</button>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-6 flex items-center gap-6">
               <img src={perfilUsuario.imagenPerfil || "https://via.placeholder.com/60"}
                 alt="perfil" className="w-16 h-16 rounded-full object-cover" />
               <div>
-                <p className="font-semibold text-lg text-gray-800">{perfilUsuario.nombreUsuario}</p>
-                <p className="text-sm text-gray-400">{perfilUsuario.email}</p>
-                <div className="flex gap-2 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[perfilUsuario.rol]}`}>
-                    {perfilUsuario.rol}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${perfilUsuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                <p className="font-semibold text-lg text-gray-800 dark:text-gray-100">{perfilUsuario.nombreUsuario}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{perfilUsuario.email}</p>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {perfilUsuario.roles?.map((r) => (
+                    <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r]}`}>
+                      {r}
+                    </span>
+                  ))}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${perfilUsuario.activo ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200"}`}>
                     {perfilUsuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
                   </span>
                 </div>
               </div>
             </div>
-            <p className="font-semibold text-gray-700">Reportes del usuario ({reportesUsuario.length})</p>
+            <p className="font-semibold text-gray-700 dark:text-gray-300">Reportes del usuario ({reportesUsuario.length})</p>
             {loadingReportes ? (
-              <p className="text-gray-400 text-sm">Cargando reportes...</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">Cargando reportes...</p>
             ) : reportesUsuario.length === 0 ? (
-              <p className="text-gray-400 text-sm">Este usuario no tiene reportes</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">Este usuario no tiene reportes</p>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
+                  <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                     <tr>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Título</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Categoría</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Prioridad</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Título</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Categoría</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Prioridad</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {reportesUsuario.map((r, i) => (
-                      <tr key={r._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="px-4 py-3 text-gray-700">{r.titulo || "Sin título"}</td>
-                        <td className="px-4 py-3 capitalize text-gray-500">{r.categoria}</td>
-                        <td className="px-4 py-3 capitalize text-gray-500">{r.prioridad}</td>
+                      <tr key={r._id} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50"}>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{r.titulo || "Sin título"}</td>
+                        <td className="px-4 py-3 capitalize text-gray-500 dark:text-gray-400">{r.categoria}</td>
+                        <td className="px-4 py-3 capitalize text-gray-500 dark:text-gray-400">{r.prioridad}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORES[r.estado] || "bg-gray-100 text-gray-600"}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ESTADO_COLORES[r.estado] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}>
                             {r.estado}
                           </span>
                         </td>
@@ -646,7 +686,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-gray-50">
+    <div className="w-screen h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Header />
 
       {mostrarModalCrear && (
@@ -677,7 +717,7 @@ export default function AdminPage() {
 
         return (
           <div
-            className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-40"
+            className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-2 flex flex-col gap-1 w-40"
             style={{ top: dropdownPos.top, left: dropdownPos.left }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -725,123 +765,124 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Total usuarios", value: usuarios.length, color: "text-gray-800", delay: "0ms" },
-                  { label: "% Resueltos", value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600", delay: "100ms" },
-                  { label: "Tiempo promedio resolución", value: tiempoPromedio != null ? `${Number(tiempoPromedio?.promedioDias ?? tiempoPromedio).toFixed(1)} días` : "—", color: "text-blue-600", delay: "200ms" },
+                  { label: "Total usuarios", value: usuarios.length, color: "text-gray-800 dark:text-gray-100", delay: "0ms" },
+                  { label: "% Resueltos", value: porcentaje != null ? `${Number(porcentaje?.porcentaje ?? porcentaje).toFixed(1)}%` : "—", color: "text-green-600 dark:text-green-400", delay: "100ms" },
+                  { label: "Tiempo promedio resolución", value: tiempoPromedio?.promedio != null ? `${(tiempoPromedio.promedio / 24).toFixed(1)} días` : "—", color: "text-blue-600 dark:text-blue-400", delay: "200ms" },
                 ].map((card) => (
-                  <div key={card.label} className="bg-white rounded-2xl shadow-sm p-5"
+                  <div key={card.label} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5"
                     style={{ animation: `fadeInUp 0.5s ease-out ${card.delay} both` }}>
-                    <p className="text-sm text-gray-400 mb-1">{card.label}</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 mb-1">{card.label}</p>
                     <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
                   </div>
                 ))}
               </div>
-{/* Tablas (como estaban originalmente) */}
-<div className="grid grid-cols-3 gap-4">
-  {[
-    { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
-    { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
-    { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
-  ].map(({ titulo, data, colorFn, delay }) => (
-    <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
-      style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
-      <div className="px-5 py-4 border-b border-gray-100">
-        <p className="font-semibold text-gray-700">{titulo}</p>
-      </div>
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
-            <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((item, i) => (
-            <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-              <td className="px-4 py-2">
-                {colorFn ? (
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
-                    {item._id}
-                  </span>
-                ) : (
-                  <span className="capitalize text-gray-600">{item._id}</span>
-                )}
-              </td>
-              <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  ))}
-</div>
 
-{/* Gráficos (nuevo) */}
-<div className="grid grid-cols-2 gap-4">
-  {/* Por estado - gráfico de barras */}
-  <div className="bg-white rounded-2xl shadow-sm overflow-hidden"
-    style={{ animation: "fadeInUp 0.5s ease-out 600ms both" }}>
-    <div className="px-5 py-4 border-b border-gray-100">
-      <p className="font-semibold text-gray-700">Por estado (gráfico)</p>
-    </div>
-    <div className="p-4" style={{ height: 220 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={estadoData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
-          <XAxis dataKey="_id" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} allowDecimals={false} />
-          <Tooltip />
-          <Bar dataKey="cantidad" radius={[6, 6, 0, 0]} isAnimationActive={true} animationDuration={800} animationEasing="ease-out">
-            {estadoData.map((item, i) => {
-              const colorMap = {
-                open: "#378ADD", validated: "#7F77DD", in_progress: "#d6be38",
-                resolved: "#22c55e", rejected: "#E24B4A",
-              };
-              return <Cell key={i} fill={colorMap[item._id] || "#9ca3af"} />;
-            })}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
+              {/* Tablas (como estaban originalmente) */}
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
+                  { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
+                  { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
+                ].map(({ titulo, data, colorFn, delay }) => (
+                  <div key={titulo} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden"
+                    style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
+                    <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                      <p className="font-semibold text-gray-700 dark:text-gray-200">{titulo}</p>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th className="text-left px-4 py-2 text-gray-400 dark:text-gray-500 font-medium">Nombre</th>
+                          <th className="text-right px-4 py-2 text-gray-400 dark:text-gray-500 font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.map((item, i) => (
+                          <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50"}>
+                            <td className="px-4 py-2">
+                              {colorFn ? (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}>
+                                  {item._id}
+                                </span>
+                              ) : (
+                                <span className="capitalize text-gray-600 dark:text-gray-300">{item._id}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right font-semibold text-gray-700 dark:text-gray-200">{item.cantidad}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
 
-  {/* Por categoría - gráfico de dona */}
-  <div className="bg-white rounded-2xl shadow-sm overflow-hidden"
-    style={{ animation: "fadeInUp 0.5s ease-out 700ms both" }}>
-    <div className="px-5 py-4 border-b border-gray-100">
-      <p className="font-semibold text-gray-700">Por categoría (gráfico)</p>
-    </div>
-    <div className="p-4" style={{ height: 220 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-           data={categoriaData}
-           dataKey="cantidad"
-           nameKey="_id"
-           cx="50%"
-           cy="50%"
-           innerRadius={45}
-           outerRadius={70}
-           paddingAngle={2}
-           isAnimationActive={true}
-           animationDuration={1670}
-           animationEasing="ease-out"
-           animationBegin={100}
-          >
-            {categoriaData.map((item, i) => (
-              <Cell key={i} fill={obtenerColorCategoria(item._id)} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend
-            wrapperStyle={{ fontSize: 11 }}
-            formatter={(value) => <span className="capitalize">{value}</span>}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-</div>
+              {/* Gráficos (nuevo) */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Por estado - gráfico de barras */}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden"
+                  style={{ animation: "fadeInUp 0.5s ease-out 600ms both" }}>
+                  <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                    <p className="font-semibold text-gray-700 dark:text-gray-200">Por estado (gráfico)</p>
+                  </div>
+                  <div className="p-4" style={{ height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={estadoData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
+                        <XAxis dataKey="_id" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                        <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="cantidad" radius={[6, 6, 0, 0]} isAnimationActive={true} animationDuration={800} animationEasing="ease-out">
+                          {estadoData.map((item, i) => {
+                            const colorMap = {
+                              open: "#378ADD", validated: "#7F77DD", in_progress: "#d6be38",
+                              resolved: "#22c55e", rejected: "#E24B4A",
+                            };
+                            return <Cell key={i} fill={colorMap[item._id] || "#9ca3af"} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Por categoría - gráfico de dona */}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden"
+                  style={{ animation: "fadeInUp 0.5s ease-out 700ms both" }}>
+                  <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                    <p className="font-semibold text-gray-700 dark:text-gray-200">Por categoría (gráfico)</p>
+                  </div>
+                  <div className="p-4" style={{ height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoriaData}
+                          dataKey="cantidad"
+                          nameKey="_id"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={70}
+                          paddingAngle={2}
+                          isAnimationActive={true}
+                          animationDuration={1670}
+                          animationEasing="ease-out"
+                          animationBegin={100}
+                        >
+                          {categoriaData.map((item, i) => (
+                            <Cell key={i} fill={obtenerColorCategoria(item._id)} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend
+                          wrapperStyle={{ fontSize: 11 }}
+                          formatter={(value) => <span className="capitalize">{value}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -875,29 +916,29 @@ export default function AdminPage() {
                 </select>
                 {(filtrosUsuarios.rol || filtrosUsuarios.activo || busqueda) && (
                   <button onClick={() => { setFiltrosUsuarios({ rol: "", activo: "" }); setBusqueda(""); }}
-                    className="text-xs text-red-400 hover:text-red-600 px-2">
+                    className="text-xs text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 px-2">
                     Limpiar filtros ✕
                   </button>
                 )}
               </div>
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
+                  <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                     <tr>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Usuario</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Email</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Rol</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Usuario</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Email</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Roles</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Estado</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={5} className="text-center py-8 text-gray-400">Cargando...</td></tr>
+                      <tr><td colSpan={5} className="text-center py-8 text-gray-400 dark:text-gray-500">Cargando...</td></tr>
                     ) : usuariosFiltrados.length === 0 ? (
-                      <tr><td colSpan={5} className="text-center py-8 text-gray-400">No hay usuarios</td></tr>
+                      <tr><td colSpan={5} className="text-center py-8 text-gray-400 dark:text-gray-500">No hay usuarios</td></tr>
                     ) : usuariosFiltrados.map((usuario, i) => (
-                      <tr key={usuario._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      <tr key={usuario._id} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50"}
                         style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -905,10 +946,10 @@ export default function AdminPage() {
                               alt="perfil"
                               className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80"
                               onClick={() => verPerfil(usuario)} />
-                            <span className="font-medium text-gray-800">{usuario.nombreUsuario}</span>
+                            <span className="font-medium text-gray-800 dark:text-gray-100">{usuario.nombreUsuario}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{usuario.email}</td>
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{usuario.email}</td>
                         <td className="px-4 py-3">
                           <button
                             onClick={(e) => {
@@ -917,24 +958,32 @@ export default function AdminPage() {
                               setDropdownPos({ top: rect.bottom + 4, left: rect.left });
                               setCambiandoRol(cambiandoRol === usuario._id ? null : usuario._id);
                             }}
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[usuario.rol]} hover:opacity-80`}>
-                            {usuario.rol} ▾
+                            className="flex items-center gap-1 hover:opacity-80"
+                          >
+                            <div className="flex gap-1 flex-wrap">
+                              {usuario.roles?.map((r) => (
+                                <span key={r} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLORES[r]}`}>
+                                  {r}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="text-gray-400 dark:text-gray-500 text-xs">▾</span>
                           </button>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${usuario.activo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${usuario.activo ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200"}`}>
                             {usuario.activo ? "🟢 Activo" : "🔴 Bloqueado"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           {usuario.activo ? (
                             <button onClick={() => handleBloquear(usuario._id)}
-                              className="text-xs border border-red-200 text-red-500 rounded-full px-3 py-1 hover:bg-red-50">
+                              className="text-xs border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 rounded-full px-3 py-1 hover:bg-red-50 dark:hover:bg-red-900/30">
                               Bloquear
                             </button>
                           ) : (
                             <button onClick={() => handleDesbloquear(usuario._id)}
-                              className="text-xs border border-green-200 text-green-500 rounded-full px-3 py-1 hover:bg-green-50">
+                              className="text-xs border border-green-200 dark:border-green-800 text-green-500 dark:text-green-400 rounded-full px-3 py-1 hover:bg-green-50 dark:hover:bg-green-900/30">
                               Desbloquear
                             </button>
                           )}
@@ -958,47 +1007,47 @@ export default function AdminPage() {
                   + Nueva categoría
                 </button>
               </div>
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
+                  <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                     <tr>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Imagen</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Nombre</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Estado</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-medium">Acciones</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Imagen</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Nombre</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Estado</th>
+                      <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingCategorias ? (
-                      <tr><td colSpan={4} className="text-center py-8 text-gray-400">Cargando...</td></tr>
+                      <tr><td colSpan={4} className="text-center py-8 text-gray-400 dark:text-gray-500">Cargando...</td></tr>
                     ) : categorias.length === 0 ? (
-                      <tr><td colSpan={4} className="text-center py-8 text-gray-400">No hay categorías</td></tr>
+                      <tr><td colSpan={4} className="text-center py-8 text-gray-400 dark:text-gray-500">No hay categorías</td></tr>
                     ) : categorias.map((cat, i) => (
-                      <tr key={cat._id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      <tr key={cat._id} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50"}
                         style={{ animation: `fadeInUp 0.3s ease-out ${i * 40}ms both` }}>
                         <td className="px-4 py-3">
                           {cat.imagen ? (
                             <img src={cat.imagen} alt={cat.nombre} className="w-9 h-9 rounded-lg object-cover" />
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
+                            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-500 text-xs">—</div>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-800 capitalize">{cat.nombre}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100 capitalize">{cat.nombre}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat.activa ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat.activa ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200"}`}>
                             {cat.activa ? "🟢 Activa" : "🔴 Inactiva"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <button onClick={() => setCategoriaEditando(cat)}
-                              className="text-xs border border-gray-200 text-gray-500 rounded-full px-3 py-1 hover:bg-gray-50">
+                              className="text-xs border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-full px-3 py-1 hover:bg-gray-50 dark:hover:bg-gray-700">
                               Editar
                             </button>
                             <button onClick={() => handleToggleCategoria(cat)}
                               className={`text-xs border rounded-full px-3 py-1 ${cat.activa
-                                ? "border-red-200 text-red-500 hover:bg-red-50"
-                                : "border-green-200 text-green-500 hover:bg-green-50"}`}>
+                                ? "border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                : "border-green-200 dark:border-green-800 text-green-500 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"}`}>
                               {cat.activa ? "Desactivar" : "Activar"}
                             </button>
                           </div>
