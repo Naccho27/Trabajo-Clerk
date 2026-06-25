@@ -5,10 +5,12 @@ import Header from "../components/Navbar/Header";
 import DashboardSaludo from "../components/Panel/DashboardSaludo.jsx";
 import PageHeader from "../components/Panel/PageHeader.jsx";
 import BuscadorInput from "../components/Panel/BuscadorInput.jsx";
-import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario } from "../services/adminService";
+import { obtenerUsuarios, bloquearUsuario, desbloquearUsuario, agregarRol, quitarRol, obtenerResumenCiudad } from "../services/adminService";
 import { obtenerReportesPublicos } from "../services/reporteService";
 import { obtenerReportesPorEstado, obtenerReportesPorCategoria, obtenerReportesPorPrioridad, obtenerPorcentajeResueltos, obtenerTiempoPromedio } from "../services/analyticsService";
+import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import axios from "axios";
+
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,6 +21,34 @@ const ROL_COLORES = {
   supervisor: "bg-purple-100 text-purple-600",
   operador:   "bg-green-100 text-green-600",
   admin:      "bg-red-100 text-red-600",
+};
+
+// Colores fijos para categorías conocidas
+const COLOR_CATEGORIA_FIJO = {
+  baches:     "#ef4444", // rojo
+  residuos:   "#a855f7", // violeta
+  alumbrado:  "#eab308", // amarillo
+  semaforo:   "#f97316", // naranja
+  inundacion: "#3b82f6", // azul
+};
+
+// Paleta de respaldo para categorías nuevas (no definidas arriba)
+const PALETA_RESPALDO = [
+  "#06b6d4", "#22c55e", "#ec4899", "#8b5cf6", "#f59e0b", "#14b8a6",
+];
+
+// Genera un color estable a partir del nombre, para categorías nuevas
+const colorPorHash = (nombre) => {
+  let hash = 0;
+  for (let i = 0; i < nombre.length; i++) {
+    hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PALETA_RESPALDO.length;
+  return PALETA_RESPALDO[index];
+};
+
+const obtenerColorCategoria = (nombreCategoria) => {
+  return COLOR_CATEGORIA_FIJO[nombreCategoria] || colorPorHash(nombreCategoria);
 };
 
 const ESTADO_COLORES = {
@@ -115,6 +145,131 @@ function ModalCrearUsuario({ onClose, onSuccess }) {
             {creandoUsuario ? "Creando..." : "Crear"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalResumenIA({ onClose }) {
+  const { getToken } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [resumen, setResumen] = useState(null);
+
+  const handleGenerar = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const token = await getToken({ template: "backend" });
+      const data = await obtenerResumenCiudad(token);
+      setResumen(data.resumen);
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "Error al generar el resumen");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
+        style={{ animation: "fadeInUp 0.3s ease-out" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-gray-800 text-lg">Resumen de la ciudad</p>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">
+            ✕
+          </button>
+        </div>
+
+        {error && <p className="text-red-500 text-sm bg-red-50 rounded-xl p-3">{error}</p>}
+
+        {!resumen && !loading && (
+          <div className="flex flex-col items-center gap-4 py-8">
+            <p className="text-sm text-gray-400 text-center">
+              Generá un resumen con IA sobre el estado actual de los reportes en la ciudad.
+            </p>
+            <button
+              onClick={handleGenerar}
+              className="text-white text-sm font-semibold px-6 py-2.5 rounded-full"
+              style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+            >
+              Generar resumen
+            </button>
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-sm text-gray-400">Generando resumen...</p>
+          </div>
+        )}
+
+        {resumen && !loading && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {resumen.resumenIA}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Datos utilizados</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Total reportes</p>
+                  <p className="text-lg font-bold text-gray-800">{resumen.estadisticas?.totalReportes ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Resueltos</p>
+                  <p className="text-lg font-bold text-green-600">{resumen.estadisticas?.reportesResueltos ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Pendientes</p>
+                  <p className="text-lg font-bold text-blue-600">{resumen.estadisticas?.reportesPendientes ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Críticos</p>
+                  <p className="text-lg font-bold text-red-600">{resumen.estadisticas?.reportesCriticos ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Prioridad alta</p>
+                  <p className="text-lg font-bold text-orange-500">{resumen.estadisticas?.reportesAltos ?? "—"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400">Duplicados</p>
+                  <p className="text-lg font-bold text-gray-500">{resumen.estadisticas?.reportesDuplicados ?? "—"}</p>
+                </div>
+              </div>
+
+              {resumen.estadisticas?.categorias && (
+                <div className="bg-gray-50 rounded-xl p-3 mt-1">
+                  <p className="text-xs text-gray-400 mb-2">Por categoría</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(resumen.estadisticas.categorias).map(([cat, cant]) => (
+                      <span key={cat} className="text-xs bg-white border border-gray-200 rounded-full px-2.5 py-1 text-gray-600 capitalize">
+                        {cat}: <span className="font-semibold">{cant}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleGenerar}
+              className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
+            >
+              Volver a generar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -288,6 +443,7 @@ export default function AdminPage() {
   const [reportesUsuario, setReportesUsuario] = useState([]);
   const [loadingReportes, setLoadingReportes] = useState(false);
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
+  const [mostrarModalResumen, setMostrarModalResumen] = useState(false);
 
   const [estadoData, setEstadoData] = useState([]);
   const [categoriaData, setCategoriaData] = useState([]);
@@ -509,20 +665,43 @@ export default function AdminPage() {
         />
       )}
 
-      {cambiandoRol && (
-        <div
-          className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-32"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {ROLES.map((r) => (
-            <button key={r} onClick={() => handleCambiarRol(cambiandoRol, r)}
-              className={`text-xs px-3 py-1.5 rounded-full text-left hover:opacity-80 font-medium ${ROL_COLORES[r]}`}>
-              {r}
-            </button>
-          ))}
-        </div>
+      {mostrarModalResumen && (
+        <ModalResumenIA
+          onClose={() => setMostrarModalResumen(false)}
+        />
       )}
+
+      {cambiandoRol && (() => {
+        const usuarioActivo = usuarios.find((u) => u._id === cambiandoRol);
+        if (!usuarioActivo) return null;
+
+        return (
+          <div
+            className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-1 w-40"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {ROLES.map((r) => {
+              const tiene = usuarioActivo.roles?.includes(r);
+              const esUltimoRol = tiene && usuarioActivo.roles.length <= 1;
+              return (
+                <button
+                  key={r}
+                  onClick={() => !esUltimoRol && handleToggleRol(usuarioActivo, r)}
+                  disabled={esUltimoRol}
+                  className={`flex items-center justify-between text-xs px-3 py-1.5 rounded-full text-left font-medium ${ROL_COLORES[r]} ${
+                    esUltimoRol ? "opacity-40 cursor-not-allowed" : "hover:opacity-80"
+                  }`}
+                  title={esUltimoRol ? "El usuario debe tener al menos un rol" : ""}
+                >
+                  <span>{r}</span>
+                  <span>{tiene ? "✓" : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <div className="flex flex-1 overflow-hidden pt-[56px]">
         <Sidebar seccion={seccion} setSeccion={setSeccion} />
@@ -533,6 +712,17 @@ export default function AdminPage() {
           {seccion === "dashboard" && (
             <div className="flex flex-col gap-6">
               <DashboardSaludo user={user} rol="Admin" />
+
+              <div className="flex justify-start">
+                <button
+                  onClick={() => setMostrarModalResumen(true)}
+                  className="text-white text-sm font-semibold px-5 py-2.5 rounded-full flex items-center gap-2"
+                  style={{ background: "linear-gradient(135deg, #ff3b3b, #3b3bff)" }}
+                >
+                   Resumen
+                </button>
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 {[
                   { label: "Total usuarios", value: usuarios.length, color: "text-gray-800", delay: "0ms" },
@@ -546,44 +736,112 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { titulo: "Por estado", data: estadoData, colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
-                  { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
-                  { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
-                ].map(({ titulo, data, colorFn, delay }) => (
-                  <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
-                    style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <p className="font-semibold text-gray-700">{titulo}</p>
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
-                          <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((item, i) => (
-                          <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                            <td className="px-4 py-2">
-                              {colorFn ? (
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
-                                  {item._id}
-                                </span>
-                              ) : (
-                                <span className="capitalize text-gray-600">{item._id}</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
+{/* Tablas (como estaban originalmente) */}
+<div className="grid grid-cols-3 gap-4">
+  {[
+    { titulo: "Por estado",    data: estadoData,    colorFn: (e) => ESTADO_COLORES[e._id], delay: "300ms" },
+    { titulo: "Por categoría", data: categoriaData, colorFn: null, delay: "400ms" },
+    { titulo: "Por prioridad", data: prioridadData, colorFn: null, delay: "500ms" },
+  ].map(({ titulo, data, colorFn, delay }) => (
+    <div key={titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden"
+      style={{ animation: `fadeInUp 0.5s ease-out ${delay} both` }}>
+      <div className="px-5 py-4 border-b border-gray-100">
+        <p className="font-semibold text-gray-700">{titulo}</p>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left px-4 py-2 text-gray-400 font-medium">Nombre</th>
+            <th className="text-right px-4 py-2 text-gray-400 font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item, i) => (
+            <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+              <td className="px-4 py-2">
+                {colorFn ? (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorFn(item) || "bg-gray-100 text-gray-600"}`}>
+                    {item._id}
+                  </span>
+                ) : (
+                  <span className="capitalize text-gray-600">{item._id}</span>
+                )}
+              </td>
+              <td className="px-4 py-2 text-right font-semibold text-gray-700">{item.cantidad}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ))}
+</div>
+
+{/* Gráficos (nuevo) */}
+<div className="grid grid-cols-2 gap-4">
+  {/* Por estado - gráfico de barras */}
+  <div className="bg-white rounded-2xl shadow-sm overflow-hidden"
+    style={{ animation: "fadeInUp 0.5s ease-out 600ms both" }}>
+    <div className="px-5 py-4 border-b border-gray-100">
+      <p className="font-semibold text-gray-700">Por estado (gráfico)</p>
+    </div>
+    <div className="p-4" style={{ height: 220 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={estadoData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
+          <XAxis dataKey="_id" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="cantidad" radius={[6, 6, 0, 0]} isAnimationActive={true} animationDuration={800} animationEasing="ease-out">
+            {estadoData.map((item, i) => {
+              const colorMap = {
+                open: "#378ADD", validated: "#7F77DD", in_progress: "#d6be38",
+                resolved: "#22c55e", rejected: "#E24B4A",
+              };
+              return <Cell key={i} fill={colorMap[item._id] || "#9ca3af"} />;
+            })}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+
+  {/* Por categoría - gráfico de dona */}
+  <div className="bg-white rounded-2xl shadow-sm overflow-hidden"
+    style={{ animation: "fadeInUp 0.5s ease-out 700ms both" }}>
+    <div className="px-5 py-4 border-b border-gray-100">
+      <p className="font-semibold text-gray-700">Por categoría (gráfico)</p>
+    </div>
+    <div className="p-4" style={{ height: 220 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+           data={categoriaData}
+           dataKey="cantidad"
+           nameKey="_id"
+           cx="50%"
+           cy="50%"
+           innerRadius={45}
+           outerRadius={70}
+           paddingAngle={2}
+           isAnimationActive={true}
+           animationDuration={1670}
+           animationEasing="ease-out"
+           animationBegin={100}
+          >
+            {categoriaData.map((item, i) => (
+              <Cell key={i} fill={obtenerColorCategoria(item._id)} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={(value) => <span className="capitalize">{value}</span>}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</div>
             </div>
           )}
 

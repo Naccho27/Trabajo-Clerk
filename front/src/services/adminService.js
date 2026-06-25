@@ -72,3 +72,14 @@ export const quitarRol = async (
 
   return response.data;
 };
+
+export const obtenerResumenCiudad = async (token) => {
+  const response = await axios.get(
+    `http://localhost:3000/api/adminAnalytics/resumen`,
+    {
+      headers: headers(token),
+    }
+  );
+
+  return response.data;
+};

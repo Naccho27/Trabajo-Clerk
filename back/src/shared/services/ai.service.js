@@ -402,8 +402,7 @@ Máximo 250 palabras.
         error.message
       );
 
-      return
-        "No fue posible generar el resumen.";
+      return "No fue posible generar el resumen.";
 
     }
 
